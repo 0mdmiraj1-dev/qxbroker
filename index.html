@@ -1,0 +1,2643 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0a0d12">
+  <title>Trading Mastermind</title>
+  <style>
+  /* =========================================================================
+   TRADING MASTERMIND — design tokens and components
+   ========================================================================= */
+:root {
+  /* Surfaces: obsidian, layered upward */
+  --bg: #080b10;
+  --bg-glow-1: rgba(60, 200, 232, 0.07);
+  --bg-glow-2: rgba(52, 211, 158, 0.045);
+  --surface: #10151c;
+  --surface-2: #141a23;
+  --surface-3: #1b2330;
+  --glass: rgba(18, 24, 33, 0.72);
+  --glass-edge: rgba(190, 215, 245, 0.09);
+  --line: rgba(160, 182, 214, 0.10);
+  --line-strong: rgba(160, 182, 214, 0.18);
+
+  /* Ink */
+  --text: #e8edf4;
+  --text-2: #a9b3c2;
+  --text-3: #707c8e;
+
+  /* Meaning */
+  --profit: #34d39e;
+  --profit-ink: #5fe3b6;
+  --profit-soft: rgba(52, 211, 158, 0.12);
+  --loss: #f2607a;
+  --loss-ink: #ff8499;
+  --loss-soft: rgba(242, 96, 122, 0.12);
+  --notrade: #7a8597;
+  --notrade-soft: rgba(122, 133, 151, 0.14);
+  --pending: #2a3442;
+  --cyan: #45cbe9;
+  --cyan-soft: rgba(69, 203, 233, 0.14);
+  --warn: #e8b453;
+
+  /* Chart series (validated against --surface, dark mode) */
+  --series-actual: #1a9fc2;
+  --series-a: #8b78ea;
+  --series-b: #b8841c;
+
+  /* Type */
+  --font: "Inter", "Inter Variable", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.8125rem;
+  --fs-md: 0.9375rem;
+  --fs-lg: 1.125rem;
+  --fs-xl: 1.5rem;
+  --fs-2xl: 2rem;
+  --fs-hero: clamp(2.5rem, 5.2vw, 3.75rem);
+
+  /* Space & shape */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --sidebar-w: 248px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font);
+  font-size: var(--fs-md);
+  line-height: 1.5;
+  color: var(--text);
+  background:
+    radial-gradient(900px 520px at 12% -8%, var(--bg-glow-1), transparent 70%),
+    radial-gradient(800px 600px at 105% 110%, var(--bg-glow-2), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+
+h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.015em; line-height: 1.2; }
+p { margin: 0; }
+button, input, select { font: inherit; color: inherit; }
+[hidden] { display: none !important; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.skip-link { position: absolute; left: var(--s4); top: -60px; z-index: 100; padding: var(--s2) var(--s3); background: var(--cyan); color: #04131a; border-radius: var(--r-sm); font-weight: 600; text-decoration: none; }
+.skip-link:focus { top: var(--s4); }
+
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+.muted { color: var(--text-2); }
+.small { font-size: var(--fs-sm); }
+.pos { color: var(--profit-ink); }
+.neg { color: var(--loss-ink); }
+.pos-soft { color: color-mix(in srgb, var(--profit-ink) 70%, var(--text-2)); }
+.neg-soft { color: color-mix(in srgb, var(--loss-ink) 70%, var(--text-2)); }
+
+/* The form lives offstage until JS mounts it */
+body > .mission-form { display: none; }
+
+/* ---- Glass ------------------------------------------------------------ */
+.glass {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0) 40%), var(--glass);
+  border: 1px solid var(--glass-edge);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 20px 40px -24px rgba(0, 0, 0, 0.7);
+}
+
+/* ---- Buttons ---------------------------------------------------------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  min-height: 40px; padding: 0 var(--s4);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 550; font-size: var(--fs-sm);
+  cursor: pointer;
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease), transform 0.1s var(--ease);
+  white-space: nowrap;
+}
+.btn:hover { background: var(--surface-3); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-primary { background: var(--cyan); border-color: transparent; color: #04141b; }
+.btn-primary:hover { background: #6ad6ee; }
+.btn-danger { background: var(--loss); border-color: transparent; color: #1c0409; }
+.btn-danger:hover { background: #ff7d93; }
+.btn-ghost { background: transparent; border-color: transparent; color: var(--text-2); }
+.btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+.btn-danger-text { color: var(--loss-ink); }
+.btn-xs { min-height: 30px; padding: 0 var(--s3); font-size: var(--fs-xs); }
+.icon-btn { display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--r-sm); border: 0; background: transparent; cursor: pointer; color: var(--text-2); }
+.icon-btn:hover { background: var(--surface-2); color: var(--text); }
+.icon-btn svg, .menu-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.linklike { background: none; border: 0; padding: 0; color: var(--cyan); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; font: inherit; }
+
+/* ---- Brand ------------------------------------------------------------ */
+.brand { display: flex; align-items: center; gap: var(--s3); }
+.brand-mark { width: 30px; height: 30px; flex: none; fill: none; stroke: var(--cyan); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.brand-mark .mark-base { stroke: var(--line-strong); stroke-width: 1.6; }
+.brand-name { font-weight: 650; letter-spacing: -0.01em; }
+.brand-lg { align-items: flex-start; margin-bottom: var(--s5); }
+.brand-lg .brand-mark { width: 40px; height: 40px; margin-top: 2px; }
+.brand-lg h1 { font-size: var(--fs-xl); margin-bottom: var(--s1); }
+
+/* ---- Setup ------------------------------------------------------------ */
+.setup { min-height: 100vh; display: grid; place-items: center; padding: var(--s5) var(--s4); }
+.setup-card { width: min(620px, 100%); border-radius: var(--r-lg); padding: var(--s6); }
+.setup-alt { margin-top: var(--s4); text-align: center; color: var(--text-2); font-size: var(--fs-sm); }
+
+/* ---- Forms ------------------------------------------------------------ */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4) var(--s4); }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; border: 0; padding: 0; margin: 0; }
+.field-wide { grid-column: 1 / -1; }
+.field-label { font-size: var(--fs-sm); color: var(--text-2); font-weight: 500; padding: 0; }
+.field-hint { font-size: var(--fs-xs); color: var(--text-3); }
+.field-error { font-size: var(--fs-sm); color: var(--loss-ink); min-height: 0; }
+.field-error:empty { display: none; }
+
+input[type="date"], .input-affix, .split-input input {
+  height: 44px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--text);
+}
+input[type="date"] { padding: 0 var(--s3); color-scheme: dark; width: 100%; }
+.input-affix { display: flex; align-items: center; padding: 0 var(--s3); gap: var(--s2); color: var(--text-3); }
+.input-affix input { flex: 1; min-width: 0; height: 100%; border: 0; background: transparent; outline: none; color: var(--text); font-variant-numeric: tabular-nums; }
+.input-affix:focus-within, input[type="date"]:focus, .split-input input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-soft); outline: none; }
+.input-affix:has(input[aria-invalid="true"]), [aria-invalid="true"] { border-color: var(--loss) !important; }
+.input-lg { height: 52px; font-size: var(--fs-lg); }
+.split-input { display: flex; align-items: center; gap: var(--s2); color: var(--text-3); font-size: var(--fs-lg); }
+.split-input input { width: 100%; min-width: 0; padding: 0 var(--s3); text-align: center; font-variant-numeric: tabular-nums; }
+
+.mission-preview { margin-top: var(--s5); padding: var(--s4); border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--line); display: grid; gap: var(--s2); font-size: var(--fs-sm); }
+.form-actions { display: flex; justify-content: flex-end; gap: var(--s2); margin-top: var(--s5); }
+.mission-form[data-mode="setup"] .settings-only { display: none; }
+.mission-form[data-mode="setup"] .form-actions .btn-primary { width: 100%; min-height: 48px; font-size: var(--fs-md); }
+
+/* ---- App shell -------------------------------------------------------- */
+.app { min-height: 100vh; }
+.sidebar {
+  position: fixed; inset: 0 auto 0 0; width: var(--sidebar-w);
+  display: flex; flex-direction: column; gap: var(--s5);
+  padding: var(--s5) var(--s4);
+  border-width: 0 1px 0 0;
+  border-radius: 0;
+  overflow-y: auto;
+  z-index: 30;
+}
+.mission-card { display: grid; gap: 2px; padding: var(--s4); border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--line); }
+.mission-code { font-weight: 650; font-size: var(--fs-lg); letter-spacing: -0.01em; }
+.mission-range, .mission-rules { font-size: var(--fs-sm); color: var(--text-2); }
+.nav { display: grid; gap: 2px; }
+.nav a { padding: var(--s2) var(--s3); border-radius: var(--r-sm); color: var(--text-2); text-decoration: none; font-weight: 500; font-size: var(--fs-md); }
+.nav a:hover { background: var(--surface-2); color: var(--text); }
+.side-actions { display: grid; gap: var(--s1); margin-top: auto; }
+.btn-side { justify-content: flex-start; background: transparent; border-color: transparent; color: var(--text-2); font-weight: 500; }
+.btn-side:hover { background: var(--surface-2); color: var(--text); }
+.btn-side-danger { color: var(--loss-ink); }
+.side-note { font-size: var(--fs-xs); color: var(--text-3); line-height: 1.45; }
+.scrim { display: none; }
+
+.main { margin-left: var(--sidebar-w); padding: var(--s5) clamp(var(--s4), 3vw, var(--s7)) var(--s7); max-width: calc(var(--sidebar-w) + 1360px); }
+.topbar { display: flex; align-items: center; gap: var(--s3); margin-bottom: var(--s5); }
+.topbar h1 { font-size: var(--fs-xl); }
+.topbar p { font-size: var(--fs-sm); }
+.menu-btn { display: none; width: 42px; height: 42px; border-radius: var(--r-sm); border: 1px solid var(--line-strong); background: var(--surface); cursor: pointer; color: var(--text); place-items: center; }
+
+.banner { margin-bottom: var(--s4); padding: var(--s3) var(--s4); border-radius: var(--r-md); background: rgba(232, 180, 83, 0.1); border: 1px solid rgba(232, 180, 83, 0.35); color: #f3d394; font-size: var(--fs-sm); }
+
+/* ---- Hero ------------------------------------------------------------- */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); gap: var(--s4); }
+.hero-balance, .hero-today { border-radius: var(--r-lg); padding: var(--s5); }
+.hero-label { font-size: var(--fs-sm); font-weight: 500; color: var(--text-2); letter-spacing: 0; }
+.hero-value { font-size: var(--fs-hero); font-weight: 650; letter-spacing: -0.035em; line-height: 1.05; margin-top: var(--s2); overflow-wrap: anywhere; }
+.hero-delta { margin-top: var(--s2); font-weight: 550; overflow-wrap: anywhere; }
+.hero-start, .today-result, .proj-roi, .kpi-sub { overflow-wrap: anywhere; }
+.hero-start { font-size: var(--fs-sm); }
+.progress { position: relative; height: 6px; margin-top: var(--s5); border-radius: 99px; background: var(--surface-3); overflow: hidden; }
+.progress-fill { position: absolute; inset: 0 auto 0 0; width: var(--p, 0%); border-radius: inherit; background: linear-gradient(90deg, var(--series-actual), var(--cyan)); transition: width 0.6s var(--ease); }
+.progress-label { margin-top: var(--s2); font-size: var(--fs-sm); }
+
+.today-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s4); }
+.today-caption { font-size: var(--fs-lg); }
+.today-head p { font-size: var(--fs-sm); margin-top: 2px; }
+.corridor { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr); align-items: end; gap: var(--s3); margin-top: var(--s5); }
+.corridor > div { display: grid; gap: 1px; font-size: var(--fs-sm); }
+.corridor strong, .corridor span { overflow-wrap: anywhere; }
+.corridor strong { font-size: var(--fs-lg); font-weight: 600; letter-spacing: -0.01em; }
+.corridor-mid { text-align: center; }
+.corridor-end-right { text-align: right; }
+#todayMeter { margin-top: var(--s3); }
+.today-result { margin-top: var(--s4); display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; font-size: var(--fs-sm); min-height: 26px; }
+
+/* ---- Corridor meter (signature element) ------------------------------- */
+.meter { position: relative; display: block; height: 14px; }
+.meter-track { position: absolute; left: 0; right: 0; top: 50%; height: 4px; transform: translateY(-50%); border-radius: 99px;
+  background: linear-gradient(90deg, var(--loss-soft), rgba(255,255,255,0.05) 33%, rgba(255,255,255,0.05) 34%, var(--profit-soft)); }
+.meter-zero { position: absolute; top: 1px; bottom: 1px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--text-3); }
+.meter-fill { position: absolute; top: 50%; height: 4px; transform: translateY(-50%); border-radius: 99px; }
+.meter-fill.pos { background: var(--profit); }
+.meter-fill.neg { background: var(--loss); }
+.meter-mark { position: absolute; top: 50%; width: 10px; height: 10px; margin-left: -5px; transform: translateY(-50%); border-radius: 50%; border: 2px solid var(--surface); }
+.meter-mark.pos { background: var(--profit); }
+.meter-mark.neg { background: var(--loss); }
+.meter-mark.flat { background: var(--notrade); }
+.over-high .meter-mark, .over-low .meter-mark { box-shadow: 0 0 0 2px currentColor; }
+.over-high .meter-mark { color: var(--profit-ink); }
+.over-low .meter-mark { color: var(--loss-ink); }
+.meter-lg { height: 22px; }
+.meter-lg .meter-track, .meter-lg .meter-fill { height: 6px; }
+.meter-lg .meter-mark { width: 16px; height: 16px; margin-left: -8px; border-width: 3px; }
+.meter-key { width: 96px; flex: none; }
+
+/* ---- KPIs ------------------------------------------------------------- */
+.kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 0; margin-top: var(--s4); border-radius: var(--r-lg); overflow: hidden; background: var(--surface); border: 1px solid var(--line); }
+.kpi { display: grid; gap: 2px; padding: var(--s4); background: var(--surface); box-shadow: 1px 0 0 var(--line), 0 1px 0 var(--line); }
+.kpi-label { font-size: var(--fs-sm); color: var(--text-2); }
+.kpi-value { font-size: var(--fs-xl); font-weight: 620; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.kpi-sub { font-size: var(--fs-xs); color: var(--text-3); }
+
+.alerts { display: grid; gap: var(--s2); margin-top: var(--s4); }
+.alerts:empty { display: none; }
+.alert { padding: var(--s3) var(--s4); border-radius: var(--r-md); border: 1px solid var(--line-strong); background: var(--surface); font-size: var(--fs-sm); color: var(--text-2); }
+.alert strong { color: var(--text); }
+.alert-warn { border-color: rgba(232, 180, 83, 0.4); background: rgba(232, 180, 83, 0.07); }
+
+/* ---- Sections --------------------------------------------------------- */
+.section { margin-top: var(--s7); scroll-margin-top: var(--s5); }
+.section-head { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--s4); flex-wrap: wrap; margin-bottom: var(--s4); }
+.section-head h2 { font-size: var(--fs-xl); }
+.section-head p { font-size: var(--fs-sm); margin-top: var(--s1); max-width: 72ch; }
+
+.legend { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); list-style: none; margin: 0; padding: 0; font-size: var(--fs-sm); color: var(--text-2); }
+.legend li { display: inline-flex; align-items: center; gap: 6px; }
+.swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
+.sw-profit { background: var(--profit); }
+.sw-loss { background: var(--loss); }
+.sw-notrade { background: var(--notrade); }
+.sw-flat { background: var(--warn); }
+.sw-pending { background: var(--pending); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.sw-today { background: transparent; box-shadow: inset 0 0 0 2px var(--cyan); }
+.key { display: inline-block; width: 18px; height: 0; border-top: 2px solid; flex: none; }
+.key-actual { border-color: var(--series-actual); }
+.key-a { border-color: var(--series-a); border-top-style: dashed; }
+.key-b { border-color: var(--series-b); border-top-style: dotted; border-top-width: 3px; }
+
+/* ---- Calendar --------------------------------------------------------- */
+.cal-key { display: flex; align-items: center; gap: var(--s3); margin-bottom: var(--s4); font-size: var(--fs-sm); }
+.cal-weekdays, .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--s2); }
+.cal-weekdays { margin-bottom: var(--s2); }
+.cal-weekdays span { font-size: var(--fs-xs); color: var(--text-3); padding-left: var(--s3); }
+
+.day {
+  position: relative;
+  display: flex; flex-direction: column; gap: 6px;
+  min-height: 150px;
+  padding: var(--s3);
+  text-align: left;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 0.15s var(--ease), background 0.15s var(--ease), transform 0.15s var(--ease);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+}
+.day::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: transparent; }
+.day:hover { border-color: var(--line-strong); background: var(--surface-2); }
+.day:active { transform: scale(0.99); }
+.day-profit::before { background: var(--profit); }
+.day-loss::before { background: var(--loss); }
+.day-notrade::before { background: var(--notrade); }
+.day-profit { background: linear-gradient(160deg, var(--profit-soft), transparent 55%), var(--surface); }
+.day-loss { background: linear-gradient(160deg, var(--loss-soft), transparent 55%), var(--surface); }
+.day-notrade { background: var(--surface); }
+.day-notrade .day-open, .day-notrade .day-plan { opacity: 0.6; }
+.day-pending { background: color-mix(in srgb, var(--surface) 70%, transparent); border-style: dashed; }
+.day.is-missed { border-color: rgba(232, 180, 83, 0.28); }
+.day.is-today { border: 1px solid var(--cyan); box-shadow: 0 0 0 3px var(--cyan-soft); border-style: solid; }
+.day.has-conflict { border-color: var(--warn); border-style: solid; }
+
+.day-top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s2); }
+.day-date { font-size: var(--fs-sm); color: var(--text-2); white-space: nowrap; }
+.day-date b { color: var(--text); font-size: var(--fs-lg); font-weight: 620; }
+.day-dow { display: none; }
+.day-month { color: var(--cyan); font-weight: 550; }
+.day-num { font-size: var(--fs-xs); color: var(--text-3); }
+.day-open { font-size: var(--fs-md); font-weight: 600; color: var(--text); letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.day-plan { display: flex; flex-wrap: wrap; justify-content: space-between; column-gap: var(--s2); font-size: var(--fs-xs); margin-top: -2px; }
+.day-plan .pos, .day-plan .neg { opacity: 0.85; }
+.day-result { display: flex; align-items: center; justify-content: space-between; gap: var(--s1); margin-top: auto; flex-wrap: wrap; }
+.day-pl { font-size: var(--fs-sm); font-weight: 600; }
+.day-ending { font-size: var(--fs-xs); color: var(--text-2); }
+.day-flag { position: absolute; top: var(--s3); right: 40px; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 99px; background: rgba(232, 180, 83, 0.14); color: #f0c879; }
+.day-flag.pos { background: var(--profit-soft); color: var(--profit-ink); }
+.day-flag.neg { background: var(--loss-soft); color: var(--loss-ink); }
+.day-flag.today { background: var(--cyan-soft); color: var(--cyan); }
+
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px 2px 6px; border-radius: 99px; font-size: var(--fs-xs); font-weight: 600; white-space: nowrap; }
+.chip span { font-size: 9px; }
+.chip-profit { background: var(--profit-soft); color: var(--profit-ink); }
+.chip-loss { background: var(--loss-soft); color: var(--loss-ink); }
+.chip-notrade { background: var(--notrade-soft); color: #aab3c1; }
+.chip-pending { background: transparent; color: var(--text-3); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.chip-flat { background: rgba(232, 180, 83, 0.14); color: #f0c879; }
+
+/* ---- Projections ------------------------------------------------------ */
+.proj-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s4); }
+.proj { padding: var(--s5); border-radius: var(--r-lg); border: 1px solid var(--line); background: var(--surface); display: grid; align-content: start; gap: var(--s1); }
+.proj h3 { font-size: var(--fs-md); font-weight: 550; color: var(--text-2); display: flex; align-items: center; gap: var(--s2); }
+.proj-value { font-size: var(--fs-2xl); font-weight: 650; letter-spacing: -0.03em; margin-top: var(--s2); overflow-wrap: anywhere; }
+.proj-roi { font-weight: 550; font-size: var(--fs-sm); }
+.proj-detail { font-size: var(--fs-sm); margin-top: var(--s2); }
+.proj-actual { border-color: color-mix(in srgb, var(--series-actual) 45%, transparent); background: linear-gradient(170deg, rgba(26, 159, 194, 0.10), transparent 60%), var(--surface); }
+.proj-a, .proj-b { background: repeating-linear-gradient(135deg, rgba(255,255,255,0.012) 0 6px, transparent 6px 12px), var(--surface); border-style: dashed; border-color: var(--line-strong); }
+.caveat { margin-top: var(--s3); font-size: var(--fs-sm); color: var(--text-3); max-width: 80ch; }
+
+/* ---- Charts ----------------------------------------------------------- */
+.charts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s4); }
+.chart-card { padding: var(--s5); border-radius: var(--r-lg); border: 1px solid var(--line); background: var(--surface); min-width: 0; }
+.chart-wide { grid-column: 1 / -1; }
+.chart-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s3); margin-bottom: var(--s4); flex-wrap: wrap; }
+.chart-head h3 { font-size: var(--fs-md); font-weight: 600; margin-bottom: var(--s2); }
+.chart { position: relative; width: 100%; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; }
+.chart-note { font-size: var(--fs-xs); margin-top: var(--s2); }
+.chart-note:empty { display: none; }
+
+.grid line { stroke: var(--line); stroke-width: 1; shape-rendering: crispEdges; }
+.grid line.zero { stroke: var(--line-strong); }
+.tick { fill: var(--text-3); font-size: 11px; font-variant-numeric: tabular-nums; }
+.line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.line-actual { stroke: var(--series-actual); stroke-width: 2.5; }
+.line-a { stroke: var(--series-a); stroke-dasharray: 7 5; }
+.line-b { stroke: var(--series-b); stroke-dasharray: 2 4; stroke-width: 2.5; }
+.dot-actual { fill: var(--series-actual); stroke: var(--surface); stroke-width: 2; }
+.dot-gap { fill: var(--surface); stroke: var(--series-actual); stroke-width: 1.5; }
+.end-label { font-size: 12px; font-weight: 600; fill: var(--text); }
+.end-sub { font-size: 10.5px; fill: var(--text-3); }
+.crosshair { stroke: var(--text-3); stroke-width: 1; pointer-events: none; }
+.band-hl { fill: rgba(255, 255, 255, 0.04); pointer-events: none; }
+.hit { cursor: crosshair; outline: none; }
+.hit:focus-visible { stroke: var(--cyan); stroke-width: 1; }
+.bar-pos { fill: var(--profit); }
+.bar-neg { fill: var(--loss); }
+.bar-flat { fill: var(--notrade); }
+.ref { stroke-width: 1; stroke-dasharray: 3 4; }
+.ref-pos { stroke: color-mix(in srgb, var(--profit) 55%, transparent); }
+.ref-neg { stroke: color-mix(in srgb, var(--loss) 55%, transparent); }
+
+.tip { position: absolute; z-index: 5; pointer-events: none; min-width: 150px; padding: var(--s2) var(--s3); border-radius: var(--r-sm); background: rgba(10, 14, 20, 0.94); border: 1px solid var(--line-strong); box-shadow: 0 10px 30px -10px rgba(0,0,0,0.8); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
+.tip-title { font-weight: 600; margin-bottom: 4px; color: var(--text); }
+.tip-row { display: flex; align-items: center; gap: 6px; color: var(--text-2); white-space: nowrap; }
+.tip-row b { margin-left: auto; padding-left: var(--s3); color: var(--text); font-weight: 600; }
+.tip-key { width: 12px; height: 0; border-top: 2px solid; }
+.key-actual.tip-key, .tip-key.key-actual { border-color: var(--series-actual); }
+.tip-key.key-a { border-color: var(--series-a); border-top-style: dashed; }
+.tip-key.key-b { border-color: var(--series-b); border-top-style: dotted; }
+
+.seg-toggle { display: inline-flex; padding: 3px; border-radius: var(--r-sm); background: var(--bg); border: 1px solid var(--line); }
+.seg-toggle button { min-width: 44px; height: 30px; padding: 0 var(--s3); border: 0; border-radius: 6px; background: transparent; color: var(--text-2); font-size: var(--fs-xs); font-weight: 600; cursor: pointer; }
+.seg-toggle button[aria-pressed="true"] { background: var(--surface-3); color: var(--text); }
+
+/* Distribution */
+.segbar { display: flex; gap: 2px; height: 40px; border-radius: var(--r-sm); overflow: hidden; }
+.seg { display: flex; align-items: center; padding: 0 var(--s2); min-width: 22px; font-size: var(--fs-xs); font-weight: 650; color: rgba(5, 10, 15, 0.85); }
+.seg-profit { background: var(--profit); }
+.seg-loss { background: var(--loss); }
+.seg-notrade { background: var(--notrade); }
+.seg-flat { background: var(--warn); }
+.seg-empty { flex: 1; justify-content: center; background: var(--surface-2); color: var(--text-3); font-weight: 500; }
+.dist-legend { list-style: none; padding: 0; margin: var(--s4) 0 0; display: grid; gap: 6px; font-size: var(--fs-sm); color: var(--text-2); }
+.dist-legend li { display: grid; grid-template-columns: 10px 1fr auto 84px; align-items: center; gap: var(--s2); }
+.dist-legend b { color: var(--text); font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.dist-legend li > .muted { text-align: right; font-size: var(--fs-xs); }
+.dist-figs { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3) var(--s4); margin: var(--s4) 0 0; padding-top: var(--s4); border-top: 1px solid var(--line); }
+.dist-figs div { display: grid; gap: 1px; }
+.dist-figs dt { font-size: var(--fs-xs); color: var(--text-3); }
+.dist-figs dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Ring */
+.ring { display: grid; justify-items: center; gap: var(--s4); }
+.ring svg { width: min(220px, 100%); height: auto; }
+.ring-seg { fill: none; stroke-linecap: butt; }
+.ring-profit { stroke: var(--profit); }
+.ring-loss { stroke: var(--loss); }
+.ring-notrade { stroke: var(--notrade); }
+.ring-flat { stroke: var(--warn); }
+.ring-pending { stroke: var(--surface-3); }
+.ring-today { stroke: var(--cyan); }
+.ring-value { fill: var(--text); font-size: 30px; font-weight: 650; letter-spacing: -0.03em; }
+.ring-sub { fill: var(--text-3); font-size: 12px; }
+.ring-legend { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: var(--s2) var(--s4); font-size: var(--fs-sm); color: var(--text-2); }
+.ring-legend li { display: inline-flex; align-items: center; gap: 6px; }
+
+/* ---- Ledger ----------------------------------------------------------- */
+.table-wrap { overflow-x: auto; border-radius: var(--r-lg); border: 1px solid var(--line); background: var(--surface); }
+.ledger { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+.ledger th { position: sticky; top: 0; text-align: left; font-weight: 550; color: var(--text-3); font-size: var(--fs-xs); padding: var(--s3); background: var(--surface-2); border-bottom: 1px solid var(--line); white-space: nowrap; }
+.ledger td { padding: var(--s2) var(--s3); border-bottom: 1px solid var(--line); white-space: nowrap; }
+.ledger tr:last-child td { border-bottom: 0; }
+.ledger tbody tr:hover td { background: rgba(255, 255, 255, 0.02); }
+.ledger .num { text-align: right; }
+.foot { margin-top: var(--s7); font-size: var(--fs-xs); color: var(--text-3); }
+
+/* ---- Dialogs ---------------------------------------------------------- */
+.dialog {
+  width: min(480px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: var(--s5);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--glass-edge);
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent 30%), #111720;
+  color: var(--text);
+  box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.9);
+  overflow-y: auto;
+}
+.dialog-wide { width: min(640px, calc(100vw - 24px)); }
+.dialog-sm { width: min(420px, calc(100vw - 24px)); }
+.dialog::backdrop { background: rgba(3, 5, 8, 0.66); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.dialog[open] { animation: dlg-in 0.22s var(--ease); }
+.dialog[open]::backdrop { animation: fade-in 0.22s var(--ease); }
+@keyframes dlg-in { from { opacity: 0; transform: translateY(10px) scale(0.985); } to { opacity: 1; transform: none; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.dialog-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s3); margin-bottom: var(--s4); }
+.dialog-head h2 { font-size: var(--fs-xl); }
+.dialog-head p { font-size: var(--fs-sm); margin-top: 2px; }
+.dialog-sm h2 { font-size: var(--fs-lg); margin-bottom: var(--s2); }
+.dialog-sm p { font-size: var(--fs-sm); }
+.dialog-foot { display: flex; align-items: center; gap: var(--s2); margin-top: var(--s5); }
+.spacer { flex: 1; }
+
+.day-plan-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin: 0; border-radius: var(--r-md); overflow: hidden; background: var(--line); border: 1px solid var(--line); }
+.day-plan-grid > div { padding: var(--s3); background: var(--surface); }
+.day-plan-grid dt { font-size: var(--fs-xs); color: var(--text-3); }
+.day-plan-grid dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.day-plan-grid dd.small { font-weight: 500; font-size: var(--fs-xs); }
+.day-origin { margin-top: var(--s2); }
+
+.status-pick { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s2); border: 0; padding: 0; margin: var(--s5) 0 0; }
+.status-pick legend { font-size: var(--fs-sm); color: var(--text-2); margin-bottom: var(--s2); padding: 0; font-weight: 500; }
+.status-opt { position: relative; }
+.status-opt input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.status-opt span { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: var(--s3) var(--s2); border-radius: var(--r-md); border: 1px solid var(--line-strong); background: var(--surface); font-weight: 600; font-size: var(--fs-sm); transition: all 0.15s var(--ease); }
+.status-opt b { font-size: 12px; color: var(--text-3); }
+.status-opt input:focus-visible + span { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.status-opt:hover span { background: var(--surface-2); }
+.opt-profit input:checked + span { border-color: var(--profit); background: var(--profit-soft); color: var(--profit-ink); }
+.opt-profit input:checked + span b { color: var(--profit-ink); }
+.opt-loss input:checked + span { border-color: var(--loss); background: var(--loss-soft); color: var(--loss-ink); }
+.opt-loss input:checked + span b { color: var(--loss-ink); }
+.opt-notrade input:checked + span { border-color: var(--notrade); background: var(--notrade-soft); }
+
+.ending { margin-top: var(--s4); display: grid; gap: var(--s2); justify-items: start; }
+.ending .field { width: 100%; }
+.entry-preview { margin-top: var(--s4); font-size: var(--fs-sm); min-height: 22px; }
+#entryError { margin-top: var(--s2); }
+
+/* ---- Toasts ----------------------------------------------------------- */
+.toasts { position: fixed; z-index: 60; right: var(--s4); bottom: var(--s4); display: grid; gap: var(--s2); max-width: min(380px, calc(100vw - 32px)); }
+.toast { padding: var(--s3) var(--s4); border-radius: var(--r-md); background: #18202b; border: 1px solid var(--line-strong); box-shadow: 0 20px 40px -20px rgba(0,0,0,0.8); font-size: var(--fs-sm); opacity: 0; transform: translateY(8px); transition: opacity 0.25s var(--ease), transform 0.25s var(--ease); }
+.toast.in { opacity: 1; transform: none; }
+.toast-pos { border-left: 3px solid var(--profit); }
+.toast-neg { border-left: 3px solid var(--loss); }
+.toast-warn { border-left: 3px solid var(--warn); }
+
+/* =========================================================================
+   Responsive
+   ========================================================================= */
+@media (max-width: 1280px) {
+  .charts { grid-template-columns: 1fr 1fr; }
+  .chart-ring { grid-column: 1 / -1; }
+  .chart-ring .ring { grid-template-columns: auto 1fr; align-items: center; justify-items: start; }
+  .chart-ring .ring-legend { flex-direction: column; align-items: flex-start; }
+}
+
+@media (max-width: 1360px) {
+  /* Too narrow for a 7-column week: flow the days, keep every detail */
+  .cal-weekdays, .cal-blank { display: none; }
+  .cal-grid { grid-template-columns: repeat(auto-fill, minmax(152px, 1fr)); }
+  .day { min-height: 0; }
+  .day-dow { display: inline; }
+  .day-flag { position: static; align-self: flex-start; order: 10; }
+}
+
+@media (max-width: 1080px) {
+  .sidebar { transform: translateX(-102%); transition: transform 0.25s var(--ease); box-shadow: 30px 0 60px -30px rgba(0,0,0,0.9); background: #0d1218; }
+  .drawer-open .sidebar { transform: none; }
+  .drawer-open .scrim { display: block; position: fixed; inset: 0; z-index: 25; background: rgba(3, 5, 8, 0.6); }
+  .main { margin-left: 0; }
+  .menu-btn { display: grid; }
+  .hero { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 760px) {
+  :root { --fs-hero: 2.5rem; }
+  .main { padding: var(--s4) var(--s3) var(--s7); }
+  .topbar h1 { font-size: var(--fs-lg); }
+  .hero-balance, .hero-today { padding: var(--s4); }
+  .kpis { grid-template-columns: 1fr 1fr; }
+  .kpi { padding: var(--s3); }
+  .kpi-value { font-size: var(--fs-lg); }
+  .cal-grid { grid-template-columns: 1fr 1fr; }
+  .day { gap: 5px; }
+  .proj-grid, .charts { grid-template-columns: 1fr; }
+  .chart-card, .proj { padding: var(--s4); }
+  .chart-ring .ring { grid-template-columns: 1fr; justify-items: center; }
+  .chart-ring .ring-legend { flex-direction: row; justify-content: center; }
+  .form-grid { grid-template-columns: 1fr; }
+  .setup-card { padding: var(--s5); }
+  .corridor strong { font-size: var(--fs-md); }
+  .today-head { flex-direction: column; }
+  .today-head .btn { width: 100%; min-height: 44px; }
+  .dialog { padding: var(--s4); }
+  .dialog-foot { flex-wrap: wrap; }
+  .dialog-foot .btn-primary { flex: 1; }
+  .section { margin-top: var(--s6); }
+  .toasts { left: var(--s3); right: var(--s3); bottom: var(--s3); max-width: none; }
+}
+
+@media (max-width: 380px) {
+  .cal-grid { grid-template-columns: 1fr; }
+}
+
+@media (forced-colors: active) {
+  .day::before, .meter-fill, .meter-mark { forced-color-adjust: none; }
+}
+  </style>
+  <script>
+  
+  /* =========================================================================
+   TRADING MASTERMIND — offline daily challenge tracker
+   Vanilla JS. No dependencies. Works from file://.
+
+   Structure
+   1. Engine   — pure date, ledger, forecast, metric and validation logic
+   2. Format   — currency / percent / date display helpers
+   3. Storage  — versioned localStorage with corruption handling
+   4. UI       — rendering, calendar, modal, charts, backup controls
+   ========================================================================= */
+'use strict';
+
+/* =========================================================================
+   1. ENGINE
+   ========================================================================= */
+const Engine = (() => {
+  const VERSION = 1;
+  const STATUSES = ['profit', 'loss', 'notrade'];
+  const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+  const EPS = 0.005;              // half a cent — the tolerance for "equal" balances
+  const MAX_BALANCE = 1e15;       // largest ending balance a user may type
+  const LIMITS = {
+    startBalance: { min: 0.01, max: 1e12 },
+    targetPct: { min: 0.01, max: 100 },
+    stopPct: { min: 0.01, max: 99.99 },
+    missionDays: { min: 1, max: 366 },
+    challengeTotal: { min: 1, max: 9999 },
+  };
+
+  /* ---- Local calendar dates (never parsed as UTC) ---------------------- */
+  const pad = (n) => String(n).padStart(2, '0');
+
+  function parseDate(key) {
+    if (typeof key !== 'string') return null;
+    const m = DATE_RE.exec(key);
+    if (!m) return null;
+    const y = +m[1], mo = +m[2], d = +m[3];
+    // Noon local time keeps the date stable through DST transitions.
+    const dt = new Date(y, mo - 1, d, 12, 0, 0, 0);
+    if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null;
+    return dt;
+  }
+
+  function dateKey(dt) {
+    return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+  }
+
+  function addDays(key, n) {
+    const dt = parseDate(key);
+    return dateKey(new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + n, 12));
+  }
+
+  function todayKey(now = new Date()) {
+    return dateKey(now);
+  }
+
+  /** Whole calendar days from a to b (b − a). */
+  function diffDays(a, b) {
+    const da = parseDate(a), db = parseDate(b);
+    const ua = Date.UTC(da.getFullYear(), da.getMonth(), da.getDate());
+    const ub = Date.UTC(db.getFullYear(), db.getMonth(), db.getDate());
+    return Math.round((ub - ua) / 86400000);
+  }
+
+  function missionDates(startKey, n) {
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(addDays(startKey, i));
+    return out;
+  }
+
+  const roundCents = (x) => Math.round(x * 100) / 100;
+  const isNum = (x) => typeof x === 'number' && Number.isFinite(x);
+
+  /* ---- Mission settings ------------------------------------------------ */
+  function defaultMission(now = new Date()) {
+    return {
+      startBalance: 100,
+      targetPct: 25,
+      stopPct: 12.5,
+      challengeTotal: 50,
+      missionDays: 30,
+      startDate: todayKey(now),
+    };
+  }
+
+  function toNumber(v) {
+    if (typeof v === 'number') return v;
+    if (typeof v !== 'string') return NaN;
+    const cleaned = v.replace(/[\s,$]/g, '');
+    if (cleaned === '') return NaN;
+    return Number(cleaned);
+  }
+
+  /** Validates mission settings. Returns { ok, errors: {field: message}, value }. */
+  function validateMission(input) {
+    const errors = {};
+    const m = input && typeof input === 'object' ? input : {};
+    const value = {};
+
+    const num = (field, label, opts = {}) => {
+      const v = toNumber(m[field]);
+      const { min, max } = LIMITS[field];
+      if (!Number.isFinite(v)) errors[field] = `Enter ${label}.`;
+      else if (opts.integer && !Number.isInteger(v)) errors[field] = `${cap(label)} must be a whole number.`;
+      else if (v < min || v > max) errors[field] = `${cap(label)} must be between ${min} and ${max.toLocaleString('en-US')}.`;
+      else value[field] = opts.cents ? roundCents(v) : v;
+    };
+
+    num('startBalance', 'a starting balance', { cents: true });
+    num('targetPct', 'a daily profit target');
+    num('stopPct', 'a daily stop loss');
+    num('challengeTotal', 'the challenge number', { integer: true });
+    num('missionDays', 'the mission length in days', { integer: true });
+
+    if (!parseDate(m.startDate)) errors.startDate = 'Choose a valid start date.';
+    else value.startDate = m.startDate;
+
+    return { ok: Object.keys(errors).length === 0, errors, value };
+  }
+
+  function cap(s) {
+    return s.replace(/^(a |an |the )/, '').replace(/^./, (c) => c.toUpperCase());
+  }
+
+  /* ---- Ledger: the single source of every balance ---------------------- */
+  /**
+   * Builds the day-by-day ledger in date order.
+   * - A recorded day's ending balance becomes the next day's opening balance.
+   * - No Trade: ending is derived from opening (never stored), so upstream edits flow through.
+   * - Pending: no outcome. Its balance is carried forward unchanged; when a later day is
+   *   recorded, the pending day is flagged as an assumed carry-forward gap.
+   * - Saved ending balances are never rewritten; P/L is re-derived from the new opening.
+   *   If that flips the sign against the saved status, the day is flagged "conflict".
+   */
+  function buildLedger(mission, records) {
+    const t = mission.targetPct / 100;
+    const s = mission.stopPct / 100;
+    const dates = missionDates(mission.startDate, mission.missionDays);
+    records = records || {};
+
+    let lastRecordedIndex = -1;
+    dates.forEach((key, i) => { if (records[key]) lastRecordedIndex = i; });
+
+    let opening = mission.startBalance;
+    const days = dates.map((key, i) => {
+      const rec = records[key];
+      const status = rec ? rec.status : 'pending';
+      const targetAmt = opening * t;
+      const stopAmt = opening * s;
+      let ending = null, pl = null, plPct = null;
+      const flags = [];
+
+      if (status === 'notrade') {
+        ending = opening; pl = 0; plPct = 0;
+      } else if (status === 'profit' || status === 'loss') {
+        ending = rec.ending;
+        pl = ending - opening;
+        plPct = opening > 0 ? (pl / opening) * 100 : null;
+        if (status === 'profit' && !(pl > EPS)) flags.push('conflict');
+        if (status === 'loss' && !(pl < -EPS)) flags.push('conflict');
+        if (pl < -EPS && -pl > stopAmt + EPS) flags.push('stopBreached');
+        if (pl > EPS && pl >= targetAmt - EPS) flags.push('targetHit');
+      } else if (i < lastRecordedIndex) {
+        flags.push('gap');
+      }
+
+      let outcome = status;
+      if (status === 'profit' || status === 'loss') {
+        outcome = pl > EPS ? 'profit' : pl < -EPS ? 'loss' : 'flat';
+      }
+
+      const day = {
+        index: i,
+        dayNum: i + 1,
+        date: key,
+        status,
+        outcome,
+        recorded: status !== 'pending',
+        opening,
+        targetAmt,
+        stopAmt,
+        targetBalance: opening + targetAmt,
+        stopBalance: opening - stopAmt,
+        ending,
+        pl,
+        plPct,
+        flags,
+      };
+      if (ending !== null) opening = ending;
+      return day;
+    });
+
+    const currentBalance = lastRecordedIndex >= 0 ? days[lastRecordedIndex].ending : mission.startBalance;
+    return { days, lastRecordedIndex, currentBalance };
+  }
+
+  /* ---- Projections ----------------------------------------------------- */
+  /** Scenario B loses on positions 3 and 6 of every 7-day block of the mission. */
+  function isScenarioBLossDay(dayIndex) {
+    const pos = (dayIndex % 7) + 1;
+    return pos === 3 || pos === 6;
+  }
+
+  /**
+   * Compounds forward from the latest recorded ending balance over every later mission day.
+   * Recorded history is never altered. Pending days before the last recorded day are
+   * treated as unchanged (carried forward) — see ledger.
+   */
+  function forecast(mission, ledger) {
+    const N = mission.missionDays;
+    const win = 1 + mission.targetPct / 100;
+    const lose = 1 - mission.stopPct / 100;
+    const startIdx = ledger.lastRecordedIndex + 1; // first day to simulate (0-based)
+    const base = ledger.currentBalance;
+
+    let a = base, b = base, lossDaysB = 0;
+    const seriesA = [{ x: startIdx, v: base }];
+    const seriesB = [{ x: startIdx, v: base }];
+    for (let i = startIdx; i < N; i++) {
+      a *= win;
+      if (isScenarioBLossDay(i)) { b *= lose; lossDaysB++; } else { b *= win; }
+      if (!Number.isFinite(a)) a = Number.MAX_VALUE; // never surface Infinity
+      if (!Number.isFinite(b)) b = Number.MAX_VALUE;
+      seriesA.push({ x: i + 1, v: a });
+      seriesB.push({ x: i + 1, v: b });
+    }
+    const start = mission.startBalance;
+    return {
+      base,
+      startIdx,
+      remaining: N - startIdx,
+      lossDaysB,
+      winDaysB: N - startIdx - lossDaysB,
+      finalA: a,
+      finalB: b,
+      roiA: ((a - start) / start) * 100,
+      roiB: ((b - start) / start) * 100,
+      seriesA,
+      seriesB,
+    };
+  }
+
+  /* ---- Metrics --------------------------------------------------------- */
+  function metrics(mission, ledger, today = todayKey()) {
+    const { days } = ledger;
+    const N = mission.missionDays;
+    const recorded = days.filter((d) => d.recorded);
+    const profitDays = days.filter((d) => d.outcome === 'profit');
+    const lossDays = days.filter((d) => d.outcome === 'loss');
+    const noTradeDays = days.filter((d) => d.status === 'notrade');
+    const tradedDays = days.filter((d) => d.status === 'profit' || d.status === 'loss');
+    const decisive = profitDays.length + lossDays.length;
+
+    let best = null, worst = null;
+    tradedDays.forEach((d) => {
+      if (!best || d.pl > best.pl) best = d;
+      if (!worst || d.pl < worst.pl) worst = d;
+    });
+
+    const offset = diffDays(mission.startDate, today);
+    let calendar;
+    if (offset < 0) calendar = { state: 'upcoming', daysUntil: -offset };
+    else if (offset >= N) calendar = { state: 'ended' };
+    else calendar = { state: 'active', dayNum: offset + 1, index: offset };
+
+    const net = ledger.currentBalance - mission.startBalance;
+    const grossProfit = profitDays.reduce((sum, d) => sum + d.pl, 0);
+    const grossLoss = lossDays.reduce((sum, d) => sum + d.pl, 0);
+
+    return {
+      startBalance: mission.startBalance,
+      currentBalance: ledger.currentBalance,
+      net,
+      roi: (net / mission.startBalance) * 100,
+      completed: recorded.length,
+      remaining: N - recorded.length,
+      progress: (recorded.length / N) * 100,
+      profitCount: profitDays.length,
+      lossCount: lossDays.length,
+      noTradeCount: noTradeDays.length,
+      flatCount: days.filter((d) => d.outcome === 'flat').length,
+      pendingCount: N - recorded.length,
+      winRate: decisive ? (profitDays.length / decisive) * 100 : null,
+      best,
+      worst,
+      grossProfit,
+      grossLoss,
+      avgWin: profitDays.length ? grossProfit / profitDays.length : null,
+      avgLoss: lossDays.length ? grossLoss / lossDays.length : null,
+      profitFactor: lossDays.length && grossLoss !== 0 ? grossProfit / Math.abs(grossLoss) : null,
+      stopBreaches: days.filter((d) => d.flags.includes('stopBreached')).length,
+      conflicts: days.filter((d) => d.flags.includes('conflict')),
+      gaps: days.filter((d) => d.flags.includes('gap')),
+      calendar,
+    };
+  }
+
+  /* ---- Day entry validation ------------------------------------------- */
+  function validateEntry(opening, status, endingRaw) {
+    if (!STATUSES.includes(status)) return { ok: false, error: 'Choose Profit, Loss or No trade.' };
+    if (status === 'notrade') return { ok: true, record: { status: 'notrade' } };
+
+    if (endingRaw === null || endingRaw === undefined || String(endingRaw).trim() === '') {
+      return { ok: false, error: 'Enter the balance you ended the day with.' };
+    }
+    const v = toNumber(endingRaw);
+    if (!Number.isFinite(v)) return { ok: false, error: 'Enter a number, like 125.50.' };
+    if (v < 0) return { ok: false, error: 'A balance can’t be negative.' };
+    if (v > MAX_BALANCE) return { ok: false, error: 'That balance is above the supported maximum.' };
+    const ending = roundCents(v);
+    const diff = ending - opening;
+
+    if (Math.abs(diff) <= EPS) {
+      return { ok: false, error: 'That matches the opening balance. Choose No trade for a flat day.' };
+    }
+    if (status === 'profit' && diff < 0) {
+      return { ok: false, error: 'A profit day has to end above the opening balance. Choose Loss instead.' };
+    }
+    if (status === 'loss' && diff > 0) {
+      return { ok: false, error: 'A loss day has to end below the opening balance. Choose Profit instead.' };
+    }
+    return { ok: true, record: { status, ending } };
+  }
+
+  /* ---- State shape, sanitising and migration -------------------------- */
+  function emptyState() {
+    return { version: VERSION, mission: null, records: {}, ui: { scale: 'log', plMode: 'usd' } };
+  }
+
+  /**
+   * Validates anything read from storage or a backup file.
+   * Throws on unusable data; drops individual bad records and reports them.
+   */
+  function sanitizeState(raw) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('The data isn’t a Trading Mastermind backup.');
+    if (!isNum(raw.version)) throw new Error('The data has no version number.');
+    if (raw.version > VERSION) throw new Error('This backup was made by a newer version of the app.');
+    const migrated = migrate(raw);
+
+    const state = emptyState();
+    const warnings = [];
+
+    if (migrated.mission !== null && migrated.mission !== undefined) {
+      const res = validateMission(migrated.mission);
+      if (!res.ok) throw new Error('The mission settings in the data are invalid.');
+      state.mission = res.value;
+    }
+
+    const recs = migrated.records;
+    if (recs && typeof recs === 'object' && !Array.isArray(recs) && state.mission) {
+      const first = state.mission.startDate;
+      const N = state.mission.missionDays;
+      let dropped = 0;
+      Object.keys(recs).forEach((key) => {
+        const rec = recs[key];
+        const okKey = DATE_RE.test(key) && parseDate(key);
+        const offset = okKey ? diffDays(first, key) : -1;
+        const inRange = okKey && offset >= 0 && offset < N;
+        const okRec = rec && typeof rec === 'object' && STATUSES.includes(rec.status) &&
+          (rec.status === 'notrade' || (isNum(rec.ending) && rec.ending >= 0 && rec.ending <= MAX_BALANCE));
+        if (!inRange || !okRec) { dropped++; return; }
+        state.records[key] = rec.status === 'notrade'
+          ? { status: 'notrade' }
+          : { status: rec.status, ending: roundCents(rec.ending) };
+      });
+      if (dropped) warnings.push(`${dropped} unreadable or out-of-range day record${dropped === 1 ? ' was' : 's were'} skipped.`);
+    }
+
+    const ui = migrated.ui || {};
+    state.ui.scale = ui.scale === 'linear' ? 'linear' : 'log';
+    state.ui.plMode = ui.plMode === 'pct' ? 'pct' : 'usd';
+    return { state, warnings };
+  }
+
+  function migrate(raw) {
+    // Version 1 is the first schema. Future versions add steps here.
+    return raw;
+  }
+
+  function serialize(state) {
+    return {
+      app: 'trading-mastermind',
+      version: VERSION,
+      savedAt: new Date().toISOString(),
+      mission: state.mission,
+      records: state.records,
+      ui: state.ui,
+    };
+  }
+
+  /** Records that would fall outside a new mission date range. */
+  function recordsOutsideRange(records, mission) {
+    return Object.keys(records).filter((key) => {
+      const off = diffDays(mission.startDate, key);
+      return off < 0 || off >= mission.missionDays;
+    });
+  }
+
+  return {
+    VERSION, STATUSES, EPS, LIMITS,
+    parseDate, dateKey, addDays, todayKey, diffDays, missionDates, roundCents,
+    defaultMission, validateMission, buildLedger, forecast, metrics, isScenarioBLossDay,
+    validateEntry, emptyState, sanitizeState, serialize, recordsOutsideRange, toNumber,
+  };
+})();
+
+/* =========================================================================
+   2. FORMAT
+   ========================================================================= */
+const Fmt = (() => {
+  const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const usdCompact = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1 });
+  const pct = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 0 });
+  const MINUS = '−';
+
+  function money(v, opts = {}) {
+    if (v === null || v === undefined || !Number.isFinite(v)) return '—';
+    const abs = Math.abs(v) < 0.005 ? 0 : Math.abs(v);
+    let s;
+    if (abs >= 1e15) s = '$' + abs.toExponential(2).replace('e+', 'e');
+    else if (opts.compact && abs >= (opts.compactFrom || 10000)) s = usdCompact.format(abs);
+    else s = usd.format(abs);
+    const sign = abs === 0 ? '' : v < 0 ? MINUS : opts.sign ? '+' : '';
+    return sign + s;
+  }
+
+  function percent(v, opts = {}) {
+    if (v === null || v === undefined || !Number.isFinite(v)) return '—';
+    const abs = Math.abs(v) < 0.005 ? 0 : Math.abs(v);
+    const s = abs >= 1e9 ? abs.toExponential(2).replace('e+', 'e') : pct.format(abs);
+    const sign = abs === 0 ? '' : v < 0 ? MINUS : opts.sign ? '+' : '';
+    return `${sign}${s}%`;
+  }
+
+  function date(key, opts = { weekday: 'short', month: 'short', day: 'numeric' }) {
+    const dt = Engine.parseDate(key);
+    return dt ? dt.toLocaleDateString('en-US', opts) : '—';
+  }
+
+  return { money, percent, date, MINUS };
+})();
+
+/* Node test hook — the UI below only runs in a browser. */
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { Engine, Fmt };
+}
+
+/* =========================================================================
+   3. STORAGE
+   ========================================================================= */
+const Store = (() => {
+  const KEY = 'tradingMastermind.state';
+  const CORRUPT_KEY = 'tradingMastermind.unreadable';
+  let available = true;
+
+  function probe() {
+    try {
+      const k = '__tm_probe__';
+      window.localStorage.setItem(k, '1');
+      window.localStorage.removeItem(k);
+      available = true;
+    } catch (e) {
+      available = false;
+    }
+    return available;
+  }
+
+  /** Returns { state, notice } where notice describes any problem. */
+  function load() {
+    if (!probe()) {
+      return { state: Engine.emptyState(), notice: 'This browser is blocking storage, so changes will only last until you close the tab. Export a backup to keep them.' };
+    }
+    let raw;
+    try {
+      raw = window.localStorage.getItem(KEY);
+    } catch (e) {
+      return { state: Engine.emptyState(), notice: 'Saved data couldn’t be read from this browser.' };
+    }
+    if (raw === null) return { state: Engine.emptyState(), notice: null };
+    try {
+      const { state, warnings } = Engine.sanitizeState(JSON.parse(raw));
+      return { state, notice: warnings.length ? warnings.join(' ') : null };
+    } catch (e) {
+      try { window.localStorage.setItem(CORRUPT_KEY, raw); } catch (_) { /* best effort */ }
+      return {
+        state: Engine.emptyState(),
+        notice: 'Your saved mission couldn’t be read, so a fresh one was started. The unreadable copy was kept in this browser under “tradingMastermind.unreadable”.',
+      };
+    }
+  }
+
+  function save(state) {
+    if (!available) return false;
+    try {
+      window.localStorage.setItem(KEY, JSON.stringify(Engine.serialize(state)));
+      return true;
+    } catch (e) {
+      available = false;
+      return false;
+    }
+  }
+
+  function clear() {
+    try { window.localStorage.removeItem(KEY); } catch (e) { /* ignore */ }
+  }
+
+  return { load, save, clear, isAvailable: () => available };
+})();
+
+/* =========================================================================
+   4. UI
+   ========================================================================= */
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => App.init());
+}
+
+const App = (() => {
+  let state = Engine.emptyState();
+  let view = null; // { ledger, fc, m }
+  let activeDayIndex = null;
+  let entryStatus = null;
+  const reduceMotion = typeof window !== 'undefined' && window.matchMedia
+    ? window.matchMedia('(prefers-reduced-motion: reduce)')
+    : { matches: true };
+
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  const STATUS_LABEL = { profit: 'Profit', loss: 'Loss', notrade: 'No trade', pending: 'Pending', flat: 'Flat' };
+  const STATUS_ICON = { profit: '▲', loss: '▼', notrade: '–', pending: '○', flat: '=' };
+
+  /* ---- Lifecycle ------------------------------------------------------- */
+  function init() {
+    const { state: loaded, notice } = Store.load();
+    state = loaded;
+    bindStatic();
+    if (notice) toast(notice, 'warn', 9000);
+    if (!state.mission) showSetup();
+    else showApp();
+  }
+
+  function commit(message, tone) {
+    const saved = Store.save(state);
+    render();
+    if (!saved) {
+      setStorageBanner(true);
+    }
+    if (message) toast(message, tone);
+  }
+
+  function setStorageBanner(on) {
+    const b = $('#storageBanner');
+    if (b) b.hidden = !on;
+  }
+
+  /* ---- Setup & settings ----------------------------------------------- */
+  function showSetup() {
+    $('#app').hidden = true;
+    const host = $('#setupHost');
+    host.appendChild($('#missionForm'));
+    $('#setup').hidden = false;
+    fillMissionForm(Engine.defaultMission(), 'setup');
+    $('#missionForm [name="startBalance"]').value = '';
+    updateMissionPreview();
+    setTimeout(() => $('#missionForm [name="startBalance"]').focus(), 50);
+  }
+
+  function showApp() {
+    $('#setup').hidden = true;
+    $('#app').hidden = false;
+    setStorageBanner(!Store.isAvailable());
+    render();
+  }
+
+  function fillMissionForm(m, mode) {
+    const f = $('#missionForm');
+    f.dataset.mode = mode;
+    f.startBalance.value = m.startBalance;
+    f.targetPct.value = m.targetPct;
+    f.stopPct.value = m.stopPct;
+    f.challengeTotal.value = m.challengeTotal;
+    f.missionDays.value = m.missionDays;
+    f.startDate.value = m.startDate;
+    $('#missionSubmit').textContent = mode === 'setup' ? 'Start mission' : 'Save settings';
+    $$('.field-error', f).forEach((e) => { e.textContent = ''; });
+    $$('[aria-invalid]', f).forEach((e) => e.removeAttribute('aria-invalid'));
+  }
+
+  function readMissionForm() {
+    const f = $('#missionForm');
+    return {
+      startBalance: f.startBalance.value,
+      targetPct: f.targetPct.value,
+      stopPct: f.stopPct.value,
+      challengeTotal: f.challengeTotal.value,
+      missionDays: f.missionDays.value,
+      startDate: f.startDate.value,
+    };
+  }
+
+  function updateMissionPreview() {
+    const res = Engine.validateMission(readMissionForm());
+    const out = $('#missionPreview');
+    if (!res.ok) {
+      out.innerHTML = '<p class="muted">Fill in every field to preview the mission.</p>';
+      return;
+    }
+    const m = res.value;
+    const last = Engine.addDays(m.startDate, m.missionDays - 1);
+    const ledger = Engine.buildLedger(m, {});
+    const fc = Engine.forecast(m, ledger);
+    const d1 = ledger.days[0];
+    out.innerHTML = `
+      <p><strong>${m.missionDays} calendar days</strong>, ${esc(Fmt.date(m.startDate, { month: 'short', day: 'numeric', year: 'numeric' }))} to ${esc(Fmt.date(last, { month: 'short', day: 'numeric', year: 'numeric' }))}, weekends included.</p>
+      <p>Day 1 aims for <span class="pos">${Fmt.money(d1.targetAmt, { sign: true })}</span> and stops at <span class="neg">${Fmt.money(-d1.stopAmt)}</span>.</p>
+      <p class="muted">If every day hit its target, the arithmetic ends at ${Fmt.money(fc.finalA, { compact: true })}. That is an illustration of compounding, not an expected result.</p>`;
+  }
+
+  function submitMissionForm(ev) {
+    ev.preventDefault();
+    const f = $('#missionForm');
+    const res = Engine.validateMission(readMissionForm());
+    $$('.field-error', f).forEach((e) => { e.textContent = ''; });
+    $$('[aria-invalid]', f).forEach((e) => e.removeAttribute('aria-invalid'));
+    if (!res.ok) {
+      Object.entries(res.errors).forEach(([field, msg]) => {
+        const input = f[field];
+        const err = $(`#err-${field}`);
+        if (input) input.setAttribute('aria-invalid', 'true');
+        if (err) err.textContent = msg;
+      });
+      const first = Object.keys(res.errors)[0];
+      if (f[first]) f[first].focus();
+      return;
+    }
+
+    if (f.dataset.mode === 'setup') {
+      state.mission = res.value;
+      state.records = {};
+      showApp();
+      commit('Mission started. Tap any day to record its result.');
+      return;
+    }
+
+    const outside = Engine.recordsOutsideRange(state.records, res.value);
+    const apply = () => {
+      outside.forEach((k) => delete state.records[k]);
+      state.mission = res.value;
+      closeDialog('#settingsDialog');
+      commit(outside.length
+        ? `Settings saved. ${outside.length} day${outside.length === 1 ? '' : 's'} outside the new range ${outside.length === 1 ? 'was' : 'were'} removed.`
+        : 'Settings saved. Every balance has been recalculated.');
+    };
+    if (outside.length) {
+      confirmDialog({
+        title: 'Remove recorded days?',
+        body: `${outside.length} recorded day${outside.length === 1 ? ' falls' : 's fall'} outside the new date range (${outside.map((k) => Fmt.date(k, { month: 'short', day: 'numeric' })).join(', ')}). Saving deletes ${outside.length === 1 ? 'it' : 'them'}.`,
+        confirm: 'Remove and save',
+        danger: true,
+      }).then((ok) => { if (ok) apply(); });
+    } else {
+      apply();
+    }
+  }
+
+  function openSettings() {
+    $('#settingsHost').appendChild($('#missionForm'));
+    fillMissionForm(state.mission, 'settings');
+    updateMissionPreview();
+    openDialog('#settingsDialog');
+  }
+
+  /* ---- Render ---------------------------------------------------------- */
+  function compute() {
+    const ledger = Engine.buildLedger(state.mission, state.records);
+    const fc = Engine.forecast(state.mission, ledger);
+    const m = Engine.metrics(state.mission, ledger, Engine.todayKey());
+    view = { ledger, fc, m };
+    return view;
+  }
+
+  function render() {
+    if (!state.mission) return;
+    compute();
+    renderHeader();
+    renderHero();
+    renderKpis();
+    renderAlerts();
+    renderCalendar();
+    renderProjections();
+    renderCharts();
+    renderLedgerTable();
+  }
+
+  function renderHeader() {
+    const mi = state.mission;
+    const last = Engine.addDays(mi.startDate, mi.missionDays - 1);
+    const range = `${Fmt.date(mi.startDate, { month: 'short', day: 'numeric' })} – ${Fmt.date(last, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    $('#missionRange').textContent = range;
+    $('#missionCode').textContent = `${mi.challengeTotal}/${mi.missionDays}`;
+    $('#sideCode').textContent = `Challenge ${mi.challengeTotal}/${mi.missionDays}`;
+    $('#sideRange').textContent = range;
+    $('#sideRules').textContent = `${Fmt.percent(mi.targetPct, { sign: true })} target, ${Fmt.percent(-mi.stopPct)} stop`;
+  }
+
+  function renderHero() {
+    const { m, ledger } = view;
+    animateNumber($('#heroBalance'), m.currentBalance, (v) => Fmt.money(v));
+    const delta = $('#heroDelta');
+    delta.className = 'hero-delta ' + toneClass(m.net);
+    delta.textContent = `${Fmt.money(m.net, { sign: true })} realized (${Fmt.percent(m.roi, { sign: true })})`;
+    $('#heroStart').textContent = `from ${Fmt.money(m.startBalance)} starting capital`;
+
+    // Today panel: the focus day is today if in range, else the next pending day.
+    const cal = m.calendar;
+    let focus = null, caption;
+    if (cal.state === 'active') {
+      focus = ledger.days[cal.index];
+      caption = `Today is day ${cal.dayNum} of ${state.mission.missionDays}`;
+    } else if (cal.state === 'upcoming') {
+      focus = ledger.days[0];
+      caption = `Mission starts in ${cal.daysUntil} day${cal.daysUntil === 1 ? '' : 's'}`;
+    } else {
+      focus = ledger.days.find((d) => !d.recorded) || ledger.days[ledger.days.length - 1];
+      caption = 'The mission calendar has ended';
+    }
+    $('#todayCaption').textContent = caption;
+    const longDate = Fmt.date(focus.date, { weekday: 'long', month: 'long', day: 'numeric' });
+    $('#todayDate').textContent = cal.state === 'active' ? longDate : `Day ${focus.dayNum}, ${longDate}`;
+    $('#todayOpen').textContent = Fmt.money(focus.opening);
+    $('#todayTarget').textContent = Fmt.money(focus.targetBalance);
+    $('#todayTargetAmt').textContent = Fmt.money(focus.targetAmt, { sign: true });
+    $('#todayStop').textContent = Fmt.money(focus.stopBalance);
+    $('#todayStopAmt').textContent = Fmt.money(-focus.stopAmt);
+    $('#todayMeter').innerHTML = meterHTML(focus, true);
+    const btn = $('#todayRecord');
+    btn.dataset.index = focus.index;
+    btn.textContent = focus.recorded ? `Edit day ${focus.dayNum}` : `Record day ${focus.dayNum}`;
+    const res = $('#todayResult');
+    if (focus.recorded && focus.status === 'notrade') {
+      res.innerHTML = `${statusChip(focus)} <span class="muted">Balance unchanged at ${Fmt.money(focus.ending)}</span>`;
+    } else if (focus.recorded) {
+      res.innerHTML = `${statusChip(focus)} <span class="${toneClass(focus.pl)}">${Fmt.money(focus.pl, { sign: true })}</span> <span class="muted">ending ${Fmt.money(focus.ending)}</span>`;
+    } else {
+      res.innerHTML = '<span class="muted">No result recorded yet.</span>';
+    }
+
+    const bar = $('#heroProgress');
+    bar.style.setProperty('--p', `${m.progress}%`);
+    bar.setAttribute('aria-valuenow', m.progress.toFixed(0));
+    $('#heroProgressLabel').textContent = `${m.completed} of ${state.mission.missionDays} days recorded`;
+  }
+
+  function renderKpis() {
+    const { m, ledger } = view;
+    const N = state.mission.missionDays;
+    const cal = m.calendar;
+    const dayValue = cal.state === 'active' ? `${cal.dayNum}` : cal.state === 'upcoming' ? '—' : `${N}`;
+    const daySub = cal.state === 'active' ? `of ${N} calendar days` : cal.state === 'upcoming' ? `starts in ${cal.daysUntil} day${cal.daysUntil === 1 ? '' : 's'}` : 'mission calendar ended';
+
+    const cards = [
+      { id: 'start', label: 'Starting balance', value: m.startBalance, fmt: (v) => Fmt.money(v), sub: 'original capital' },
+      { id: 'current', label: 'Current balance', value: m.currentBalance, fmt: (v) => Fmt.money(v), sub: ledger.lastRecordedIndex >= 0 ? `after day ${ledger.lastRecordedIndex + 1}` : 'no days recorded yet' },
+      { id: 'net', label: 'Net realized P/L', value: m.net, fmt: (v) => Fmt.money(v, { sign: true }), tone: toneClass(m.net), sub: 'ending minus starting' },
+      { id: 'roi', label: 'Actual ROI', value: m.roi, fmt: (v) => Fmt.percent(v, { sign: true }), tone: toneClass(m.roi), sub: 'on starting capital' },
+      { id: 'day', label: 'Mission day', text: dayValue, sub: daySub },
+      { id: 'done', label: 'Completed / remaining', text: `${m.completed} / ${m.remaining}`, sub: `${Fmt.percent(m.progress)} of the mission recorded` },
+      { id: 'pdays', label: 'Profit days', text: String(m.profitCount), tone: m.profitCount ? 'pos' : '', sub: `${m.noTradeCount} no-trade day${m.noTradeCount === 1 ? '' : 's'}` },
+      { id: 'ldays', label: 'Loss days', text: String(m.lossCount), tone: m.lossCount ? 'neg' : '', sub: m.stopBreaches ? `${m.stopBreaches} past the stop loss` : 'none past the stop loss' },
+      { id: 'win', label: 'Win rate', text: m.winRate === null ? '—' : Fmt.percent(m.winRate), sub: m.winRate === null ? 'needs a profit or loss day' : 'of days with a trade' },
+      { id: 'best', label: 'Best day', text: m.best ? Fmt.money(m.best.pl, { sign: true }) : '—', tone: m.best ? toneClass(m.best.pl) : '', sub: m.best ? `day ${m.best.dayNum}, ${Fmt.date(m.best.date, { month: 'short', day: 'numeric' })}` : 'no trades yet' },
+      { id: 'worst', label: 'Worst day', text: m.worst ? Fmt.money(m.worst.pl, { sign: true }) : '—', tone: m.worst ? toneClass(m.worst.pl) : '', sub: m.worst ? `day ${m.worst.dayNum}, ${Fmt.date(m.worst.date, { month: 'short', day: 'numeric' })}` : 'no trades yet' },
+    ];
+
+    const host = $('#kpis');
+    if (host.children.length !== cards.length) {
+      host.innerHTML = cards.map((c) => `
+        <div class="kpi" data-kpi="${c.id}">
+          <span class="kpi-label">${esc(c.label)}</span>
+          <span class="kpi-value"></span>
+          <span class="kpi-sub"></span>
+        </div>`).join('');
+    }
+    cards.forEach((c) => {
+      const el = $(`[data-kpi="${c.id}"]`, host);
+      const v = $('.kpi-value', el);
+      v.className = 'kpi-value ' + (c.tone || '');
+      if ('value' in c) animateNumber(v, c.value, c.fmt);
+      else v.textContent = c.text;
+      $('.kpi-sub', el).textContent = c.sub;
+    });
+  }
+
+  function renderAlerts() {
+    const { m } = view;
+    const host = $('#alerts');
+    const items = [];
+    if (m.conflicts.length) {
+      items.push(`<div class="alert alert-warn" role="status"><strong>${m.conflicts.length} day${m.conflicts.length === 1 ? ' needs' : 's need'} review.</strong> An earlier edit changed the opening balance, so the saved ending no longer matches the saved status on ${m.conflicts.map((d) => `<button class="linklike" data-open="${d.index}">day ${d.dayNum}</button>`).join(', ')}. Counts use the real balance change.</div>`);
+    }
+    if (m.gaps.length) {
+      items.push(`<div class="alert" role="status"><strong>${m.gaps.length} earlier day${m.gaps.length === 1 ? ' is' : 's are'} still pending.</strong> Balances carry through ${m.gaps.length === 1 ? 'it' : 'them'} unchanged until you record ${m.gaps.length === 1 ? 'a result' : 'results'}: ${m.gaps.map((d) => `<button class="linklike" data-open="${d.index}">day ${d.dayNum}</button>`).join(', ')}.</div>`);
+    }
+    host.innerHTML = items.join('');
+  }
+
+  /* ---- Calendar ------------------------------------------------------- */
+  function meterHTML(day, large) {
+    // Corridor from −stop (left edge) through 0 to +target (right edge).
+    const span = day.stopAmt + day.targetAmt;
+    const zero = span > 0 ? day.stopAmt / span : 0.5;
+    let mark = '', fill = '', over = '';
+    if (day.recorded && span > 0) {
+      const raw = (day.pl + day.stopAmt) / span;
+      const pos = Math.max(0, Math.min(1, raw));
+      if (raw > 1 + 1e-9) over = ' over-high';
+      if (raw < -1e-9) over = ' over-low';
+      const left = Math.min(pos, zero), width = Math.abs(pos - zero);
+      const tone = day.pl > Engine.EPS ? 'pos' : day.pl < -Engine.EPS ? 'neg' : 'flat';
+      fill = `<span class="meter-fill ${tone}" style="left:${(left * 100).toFixed(2)}%;width:${(width * 100).toFixed(2)}%"></span>`;
+      mark = `<span class="meter-mark ${tone}" style="left:${(pos * 100).toFixed(2)}%"></span>`;
+    }
+    return `<span class="meter${large ? ' meter-lg' : ''}${over}" aria-hidden="true">
+      <span class="meter-track"></span>
+      <span class="meter-zero" style="left:${(zero * 100).toFixed(2)}%"></span>
+      ${fill}${mark}
+    </span>`;
+  }
+
+  function statusChip(day) {
+    const key = day.recorded ? (day.flags.includes('conflict') ? day.outcome : day.status) : 'pending';
+    return `<span class="chip chip-${key}"><span aria-hidden="true">${STATUS_ICON[key]}</span>${STATUS_LABEL[key]}</span>`;
+  }
+
+  function renderCalendar() {
+    const { ledger, m } = view;
+    const grid = $('#calendarGrid');
+    const days = ledger.days;
+    const first = Engine.parseDate(days[0].date);
+    const lead = (first.getDay() + 6) % 7; // Monday-first grid
+    const todayIdx = m.calendar.state === 'active' ? m.calendar.index : -1;
+
+    let html = '';
+    for (let i = 0; i < lead; i++) html += '<div class="cal-blank" aria-hidden="true"></div>';
+    days.forEach((d) => {
+      const dt = Engine.parseDate(d.date);
+      const showMonth = d.index === 0 || dt.getDate() === 1;
+      const isToday = d.index === todayIdx;
+      const isPast = todayIdx >= 0 ? d.index < todayIdx : m.calendar.state === 'ended';
+      const flags = d.flags;
+      const cls = ['day', `day-${d.recorded ? d.status : 'pending'}`];
+      if (isToday) cls.push('is-today');
+      if (!d.recorded && isPast) cls.push('is-missed');
+      if (flags.includes('conflict')) cls.push('has-conflict');
+
+      const result = d.recorded
+        ? `<span class="day-result">${statusChip(d)}<span class="day-pl ${toneClass(d.pl)}">${d.status === 'notrade' ? 'Flat' : Fmt.money(d.pl, { sign: true, compact: true, compactFrom: 1e6 })}</span></span>
+           <span class="day-ending"><span class="muted">End</span> ${Fmt.money(d.ending, { compact: true, compactFrom: 1e6 })}</span>`
+        : `<span class="day-result"><span class="chip chip-pending"><span aria-hidden="true">${STATUS_ICON.pending}</span>${isToday ? 'Record today' : isPast ? 'Not recorded' : 'Upcoming'}</span></span>`;
+
+      const note = flags.includes('conflict') ? '<span class="day-flag" title="Status no longer matches the balance change">Review</span>'
+        : flags.includes('stopBreached') ? '<span class="day-flag neg" title="Loss went past the planned stop">Past stop</span>'
+        : flags.includes('targetHit') ? '<span class="day-flag pos" title="Reached the daily target">Target</span>'
+        : isToday ? '<span class="day-flag today">Today</span>' : '';
+
+      const label = `Day ${d.dayNum}, ${Fmt.date(d.date, { weekday: 'long', month: 'long', day: 'numeric' })}. Opening ${Fmt.money(d.opening)}. ` +
+        (d.recorded ? `${STATUS_LABEL[d.status]}, ending ${Fmt.money(d.ending)}, ${Fmt.money(d.pl, { sign: true })}.` : 'Pending.');
+
+      html += `
+        <button type="button" class="${cls.join(' ')}" data-open="${d.index}" aria-label="${esc(label)}">
+          <span class="day-top">
+            <span class="day-date"><span class="day-dow">${dt.toLocaleDateString('en-US', { weekday: 'short' })}</span> <b>${dt.getDate()}</b>${showMonth ? ` <span class="day-month">${dt.toLocaleDateString('en-US', { month: 'short' })}</span>` : ''}</span>
+            <span class="day-num">D${d.dayNum}</span>
+          </span>
+          <span class="day-open">${Fmt.money(d.opening, { compact: true, compactFrom: 1e6 })}</span>
+          ${meterHTML(d, false)}
+          <span class="day-plan"><span class="neg">${Fmt.money(-d.stopAmt, { compact: true, compactFrom: 1e6 })}</span><span class="pos">${Fmt.money(d.targetAmt, { sign: true, compact: true, compactFrom: 1e6 })}</span></span>
+          ${result}
+          ${note}
+        </button>`;
+    });
+    grid.innerHTML = html;
+  }
+
+  /* ---- Day modal ------------------------------------------------------ */
+  function openDay(index) {
+    const day = view.ledger.days[index];
+    if (!day) return;
+    activeDayIndex = index;
+    entryStatus = day.recorded ? day.status : null;
+
+    $('#dayTitle').textContent = `Day ${day.dayNum}`;
+    $('#daySubtitle').textContent = Fmt.date(day.date, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    $('#dayOpening').textContent = Fmt.money(day.opening);
+    $('#dayTargetBal').textContent = Fmt.money(day.targetBalance);
+    $('#dayTargetAmt').textContent = `${Fmt.money(day.targetAmt, { sign: true })} (${Fmt.percent(state.mission.targetPct, { sign: true })})`;
+    $('#dayStopBal').textContent = Fmt.money(day.stopBalance);
+    $('#dayStopAmt').textContent = `${Fmt.money(-day.stopAmt)} (${Fmt.percent(-state.mission.stopPct)})`;
+
+    const prev = index > 0 ? view.ledger.days[index - 1] : null;
+    let origin = index === 0 ? 'Opening balance is your starting capital.' : `Opening balance carries over from day ${index}${prev && prev.recorded ? '' : ', which is still pending'}.`;
+    if (day.flags.includes('conflict')) {
+      origin += ` The saved ending of ${Fmt.money(day.ending)} no longer matches “${STATUS_LABEL[day.status]}” because an earlier day changed. Update the status or the ending.`;
+    }
+    $('#dayOrigin').textContent = origin;
+
+    const input = $('#endingInput');
+    input.value = day.recorded && day.status !== 'notrade' ? day.ending.toFixed(2) : '';
+    $('#clearDay').hidden = !day.recorded;
+    setEntryStatus(entryStatus, false);
+    openDialog('#dayDialog');
+    const firstRadio = $(`#dayDialog input[name="status"]${entryStatus ? `[value="${entryStatus}"]` : ''}`);
+    if (firstRadio) firstRadio.focus();
+  }
+
+  function setEntryStatus(status, focusInput) {
+    entryStatus = status;
+    $$('#dayDialog input[name="status"]').forEach((r) => { r.checked = r.value === status; });
+    const day = view.ledger.days[activeDayIndex];
+    const wrap = $('#endingWrap');
+    const quick = $('#quickFill');
+    wrap.hidden = !(status === 'profit' || status === 'loss');
+    if (status === 'profit') {
+      quick.textContent = `Use target ${Fmt.money(day.targetBalance)}`;
+      quick.dataset.value = Engine.roundCents(day.targetBalance).toFixed(2);
+    } else if (status === 'loss') {
+      quick.textContent = `Use stop ${Fmt.money(Math.max(0, day.stopBalance))}`;
+      quick.dataset.value = Engine.roundCents(Math.max(0, day.stopBalance)).toFixed(2);
+    }
+    updateEntryPreview();
+    if (focusInput && !wrap.hidden) $('#endingInput').focus();
+  }
+
+  function updateEntryPreview() {
+    const day = view.ledger.days[activeDayIndex];
+    const out = $('#entryPreview');
+    const err = $('#entryError');
+    const input = $('#endingInput');
+    err.textContent = '';
+    input.removeAttribute('aria-invalid');
+    const save = $('#saveDay');
+
+    if (!entryStatus) {
+      out.innerHTML = '<span class="muted">Choose how the day went.</span>';
+      save.disabled = true;
+      return;
+    }
+    save.disabled = false;
+    if (entryStatus === 'notrade') {
+      out.innerHTML = `<span class="muted">Balance stays at</span> <strong>${Fmt.money(day.opening)}</strong>. <span class="muted">The day still counts as a calendar day.</span>`;
+      return;
+    }
+    const raw = input.value;
+    if (raw.trim() === '') {
+      out.innerHTML = '<span class="muted">Enter the ending balance to see the result.</span>';
+      return;
+    }
+    const v = Engine.toNumber(raw);
+    if (!Number.isFinite(v)) {
+      out.innerHTML = '';
+      return;
+    }
+    const pl = Engine.roundCents(v) - day.opening;
+    const pctTxt = day.opening > 0 ? ` (${Fmt.percent((pl / day.opening) * 100, { sign: true })})` : '';
+    let extra = '';
+    if (pl < -Engine.EPS && -pl > day.stopAmt + Engine.EPS) extra = ` <span class="neg">Past your ${Fmt.percent(state.mission.stopPct)} stop.</span>`;
+    else if (pl > Engine.EPS && pl >= day.targetAmt - Engine.EPS) extra = ' <span class="pos">Target reached.</span>';
+    out.innerHTML = `<span class="muted">Realized</span> <strong class="${toneClass(pl)}">${Fmt.money(pl, { sign: true })}${pctTxt}</strong>.${extra}`;
+  }
+
+  function saveDay(ev) {
+    ev.preventDefault();
+    const day = view.ledger.days[activeDayIndex];
+    const res = Engine.validateEntry(day.opening, entryStatus, $('#endingInput').value);
+    if (!res.ok) {
+      $('#entryError').textContent = res.error;
+      if (entryStatus === 'profit' || entryStatus === 'loss') {
+        $('#endingInput').setAttribute('aria-invalid', 'true');
+        $('#endingInput').focus();
+      }
+      return;
+    }
+    state.records[day.date] = res.record;
+    closeDialog('#dayDialog');
+    compute();
+    const next = view.ledger.days[activeDayIndex + 1];
+    const saved = view.ledger.days[activeDayIndex];
+    const msg = next
+      ? `Day ${saved.dayNum} saved. Day ${next.dayNum} opens at ${Fmt.money(saved.ending)}.`
+      : `Day ${saved.dayNum} saved. That was the last mission day.`;
+    commit(msg, saved.pl > Engine.EPS ? 'pos' : saved.pl < -Engine.EPS ? 'neg' : '');
+  }
+
+  function clearDay() {
+    const day = view.ledger.days[activeDayIndex];
+    confirmDialog({
+      title: `Clear day ${day.dayNum}?`,
+      body: 'The day goes back to Pending and later opening balances are recalculated. Ending balances saved on later days stay as they are.',
+      confirm: 'Clear result',
+      danger: true,
+    }).then((ok) => {
+      if (!ok) return;
+      delete state.records[day.date];
+      closeDialog('#dayDialog');
+      commit(`Day ${day.dayNum} cleared.`);
+    });
+  }
+
+  /* ---- Projections ---------------------------------------------------- */
+  function renderProjections() {
+    const { fc, ledger, m } = view;
+    const mi = state.mission;
+    const L = ledger.lastRecordedIndex;
+    const basis = L >= 0
+      ? `Starts from your recorded balance of ${Fmt.money(fc.base)} after day ${L + 1} and simulates the ${fc.remaining} remaining day${fc.remaining === 1 ? '' : 's'}.`
+      : `Starts from your ${Fmt.money(fc.base)} starting capital and simulates all ${fc.remaining} days.`;
+    const gapNote = m.gaps.length ? ` Pending days before day ${L + 1} are treated as unchanged.` : '';
+    $('#projBasis').textContent = fc.remaining ? basis + gapNote : 'Every mission day is recorded, so both scenarios equal your actual result.';
+
+    const fill = (id, final, roi, detail) => {
+      animateNumber($(`#${id}Final`), final, (v) => Fmt.money(v));
+      const r = $(`#${id}Roi`);
+      r.className = 'proj-roi ' + toneClass(roi);
+      r.textContent = `${Fmt.percent(roi, { sign: true })} net ROI on ${Fmt.money(mi.startBalance)}`;
+      $(`#${id}Detail`).textContent = detail;
+    };
+    fill('projA', fc.finalA, fc.roiA, `${fc.remaining} winning day${fc.remaining === 1 ? '' : 's'} at ${Fmt.percent(mi.targetPct, { sign: true })}, compounded daily.`);
+    fill('projB', fc.finalB, fc.roiB, `${fc.winDaysB} win${fc.winDaysB === 1 ? '' : 's'} at ${Fmt.percent(mi.targetPct, { sign: true })} and ${fc.lossDaysB} loss${fc.lossDaysB === 1 ? '' : 'es'} at ${Fmt.percent(-mi.stopPct)}. Losses fall on days 3 and 6 of every 7-day block, counted from mission day 1.`);
+    $('#projActual').textContent = Fmt.money(m.currentBalance);
+    const ar = $('#projActualRoi');
+    ar.className = 'proj-roi ' + toneClass(m.roi);
+    ar.textContent = `${Fmt.percent(m.roi, { sign: true })} realized ROI`;
+  }
+
+  /* ---- Ledger table (also the table view for every chart) ------------- */
+  function renderLedgerTable() {
+    const rows = view.ledger.days.map((d) => {
+      const flags = [];
+      if (d.flags.includes('conflict')) flags.push('Review status');
+      if (d.flags.includes('stopBreached')) flags.push('Past stop');
+      if (d.flags.includes('targetHit')) flags.push('Target hit');
+      if (d.flags.includes('gap')) flags.push('Carried forward');
+      return `<tr>
+        <td class="num">${d.dayNum}</td>
+        <td>${esc(Fmt.date(d.date))}</td>
+        <td>${statusChip(d)}</td>
+        <td class="num">${Fmt.money(d.opening)}</td>
+        <td class="num pos-soft">${Fmt.money(d.targetBalance)}</td>
+        <td class="num neg-soft">${Fmt.money(d.stopBalance)}</td>
+        <td class="num">${d.recorded ? Fmt.money(d.ending) : '—'}</td>
+        <td class="num ${d.recorded ? toneClass(d.pl) : ''}">${d.recorded ? Fmt.money(d.pl, { sign: true }) : '—'}</td>
+        <td class="num ${d.recorded ? toneClass(d.pl) : ''}">${d.recorded ? Fmt.percent(d.plPct, { sign: true }) : '—'}</td>
+        <td class="muted">${flags.join(', ')}</td>
+        <td><button type="button" class="btn btn-ghost btn-xs" data-open="${d.index}">${d.recorded ? 'Edit' : 'Record'}</button></td>
+      </tr>`;
+    }).join('');
+    $('#ledgerBody').innerHTML = rows;
+  }
+
+  /* ---- Charts (hand-built SVG, offline) ------------------------------- */
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  function svgEl(tag, attrs = {}, text) {
+    const el = document.createElementNS(SVGNS, tag);
+    Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+    if (text !== undefined) el.textContent = text;
+    return el;
+  }
+
+  function niceStep(range, count) {
+    const raw = range / Math.max(1, count);
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw / mag;
+    return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * mag;
+  }
+
+  function linearTicks(min, max, count) {
+    if (min === max) { max = min + 1; }
+    const step = niceStep(max - min, count);
+    const lo = Math.floor(min / step) * step, hi = Math.ceil(max / step) * step;
+    const ticks = [];
+    for (let v = lo; v <= hi + step / 2; v += step) ticks.push(Math.abs(v) < step / 1e6 ? 0 : v);
+    return { ticks, lo, hi };
+  }
+
+  function logTicks(min, max) {
+    const lo = Math.floor(Math.log10(min)), hi = Math.ceil(Math.log10(max));
+    let ticks = [];
+    const span = hi - lo;
+    const mults = span <= 2 ? [1, 2, 5] : span <= 6 ? [1] : null;
+    if (mults) {
+      for (let e = lo; e <= hi; e++) mults.forEach((mu) => ticks.push(mu * Math.pow(10, e)));
+    } else {
+      const stride = Math.ceil(span / 6);
+      for (let e = lo; e <= hi; e += stride) ticks.push(Math.pow(10, e));
+    }
+    ticks = ticks.filter((t) => t >= Math.pow(10, lo) && t <= Math.pow(10, hi));
+    return { ticks, lo: Math.pow(10, lo), hi: Math.pow(10, hi) };
+  }
+
+  function axisMoney(v) {
+    const a = Math.abs(v);
+    if (a >= 1e15) return (v < 0 ? Fmt.MINUS : '') + '$' + a.toExponential(0).replace('e+', 'e');
+    if (a >= 1000) return (v < 0 ? Fmt.MINUS : '') + new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1 }).format(a);
+    return (v < 0 ? Fmt.MINUS : '') + '$' + (a >= 10 ? a.toFixed(0) : a.toFixed(a % 1 ? 2 : 0));
+  }
+
+  function chartWidth(host) {
+    return Math.max(280, Math.floor(host.getBoundingClientRect().width || host.clientWidth || 600));
+  }
+
+  function renderCharts() {
+    renderBalanceChart();
+    renderPLChart();
+    renderDistribution();
+    renderRing();
+  }
+
+  /* Balance: actual (solid) vs two projections (dashed), one y-axis. */
+  function renderBalanceChart() {
+    const host = $('#balanceChart');
+    const { ledger, fc } = view;
+    const N = state.mission.missionDays;
+    const W = chartWidth(host);
+    const H = W < 520 ? 240 : 300;
+    const pad = { l: 58, r: W < 520 ? 12 : 92, t: 14, b: 30 };
+    const L = ledger.lastRecordedIndex;
+
+    const actual = [{ x: 0, v: state.mission.startBalance, rec: true }];
+    for (let i = 0; i <= L; i++) {
+      const d = ledger.days[i];
+      actual.push({ x: i + 1, v: d.recorded ? d.ending : d.opening, rec: d.recorded });
+    }
+    const showProj = fc.remaining > 0;
+    const A = showProj ? fc.seriesA : [];
+    const B = showProj ? fc.seriesB : [];
+
+    const all = actual.concat(A, B).map((p) => p.v);
+    const positive = all.filter((v) => v > 0);
+    let scale = state.ui.scale;
+    const canLog = positive.length === all.length && positive.length > 0;
+    if (scale === 'log' && !canLog) scale = 'linear';
+    $('#scaleNote').textContent = state.ui.scale === 'log' && !canLog ? 'Log scale needs balances above $0, so this view is linear.' : '';
+    $$('#scaleToggle button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.scale === state.ui.scale)));
+
+    let yTicks, y;
+    const innerH = H - pad.t - pad.b;
+    if (scale === 'log') {
+      const lt = logTicks(Math.min(...all), Math.max(...all));
+      yTicks = lt.ticks;
+      const l0 = Math.log10(lt.lo), l1 = Math.log10(lt.hi);
+      y = (v) => pad.t + innerH - ((Math.log10(Math.max(v, lt.lo)) - l0) / (l1 - l0 || 1)) * innerH;
+    } else {
+      const t = linearTicks(Math.min(0, ...all), Math.max(...all), 5);
+      yTicks = t.ticks;
+      y = (v) => pad.t + innerH - ((v - t.lo) / (t.hi - t.lo || 1)) * innerH;
+    }
+    const innerW = W - pad.l - pad.r;
+    const x = (i) => pad.l + (i / N) * innerW;
+
+    const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img', 'aria-label': `Balance chart. Actual balance ${Fmt.money(view.m.currentBalance)}. Perfect-discipline projection ${Fmt.money(fc.finalA)}. Two-losses-per-week projection ${Fmt.money(fc.finalB)}.` });
+    const g = svgEl('g', { class: 'grid' });
+    yTicks.forEach((tv) => {
+      const yy = y(tv);
+      g.appendChild(svgEl('line', { x1: pad.l, x2: W - pad.r, y1: yy, y2: yy }));
+      g.appendChild(svgEl('text', { x: pad.l - 8, y: yy + 4, 'text-anchor': 'end', class: 'tick' }, axisMoney(tv)));
+    });
+    const xStep = Math.max(1, Math.ceil(N / (W < 520 ? 4 : 7)));
+    for (let i = 0; i <= N; i += xStep) {
+      g.appendChild(svgEl('text', { x: x(i), y: H - 8, 'text-anchor': 'middle', class: 'tick' }, i === 0 ? 'Start' : `D${i}`));
+    }
+    svg.appendChild(g);
+
+    const path = (pts) => pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.x).toFixed(1)},${y(p.v).toFixed(1)}`).join('');
+    if (showProj) {
+      svg.appendChild(svgEl('path', { d: path(A), class: 'line line-a' }));
+      svg.appendChild(svgEl('path', { d: path(B), class: 'line line-b' }));
+    }
+    svg.appendChild(svgEl('path', { d: path(actual), class: 'line line-actual' }));
+    actual.forEach((p) => {
+      if (p.x === 0) return;
+      svg.appendChild(svgEl('circle', { cx: x(p.x), cy: y(p.v), r: p.rec ? 4 : 3, class: p.rec ? 'dot-actual' : 'dot-gap' }));
+    });
+
+    // Direct end labels (wide layouts only; the legend covers narrow ones).
+    if (W >= 520) {
+      const labels = [];
+      if (showProj) {
+        labels.push({ y: y(fc.finalA), text: Fmt.money(fc.finalA, { compact: true }), cls: 'end-a', name: 'Perfect' });
+        labels.push({ y: y(fc.finalB), text: Fmt.money(fc.finalB, { compact: true }), cls: 'end-b', name: '2 losses/wk' });
+      } else {
+        labels.push({ y: y(view.m.currentBalance), text: Fmt.money(view.m.currentBalance, { compact: true }), cls: 'end-actual', name: 'Actual' });
+      }
+      labels.sort((a, b) => a.y - b.y);
+      for (let i = 1; i < labels.length; i++) if (labels[i].y - labels[i - 1].y < 30) labels[i].y = labels[i - 1].y + 30;
+      labels.forEach((lb) => {
+        const t = svgEl('text', { x: W - pad.r + 8, y: lb.y - 2, class: `end-label ${lb.cls}` }, lb.text);
+        svg.appendChild(t);
+        svg.appendChild(svgEl('text', { x: W - pad.r + 8, y: lb.y + 12, class: 'end-sub' }, lb.name));
+      });
+    }
+
+    // Hover / keyboard layer.
+    const cross = svgEl('line', { class: 'crosshair', y1: pad.t, y2: H - pad.b, x1: -10, x2: -10 });
+    svg.appendChild(cross);
+    const hit = svgEl('rect', { x: pad.l, y: pad.t, width: innerW, height: innerH, fill: 'transparent', tabindex: '0', class: 'hit', 'aria-label': 'Balance chart. Use left and right arrow keys to read each day.' });
+    svg.appendChild(hit);
+    host.replaceChildren(svg);
+    host.appendChild(tipEl());
+
+    const valueAt = (series, i) => { const p = series.find((q) => q.x === i); return p ? p.v : null; };
+    let cur = null;
+    const show = (i) => {
+      cur = Math.max(0, Math.min(N, i));
+      const cx = x(cur);
+      cross.setAttribute('x1', cx); cross.setAttribute('x2', cx);
+      const day = cur > 0 ? ledger.days[cur - 1] : null;
+      const act = valueAt(actual, cur), a = valueAt(A, cur), b = valueAt(B, cur);
+      let html = `<div class="tip-title">${cur === 0 ? 'Start' : `Day ${cur}, ${esc(Fmt.date(day.date, { month: 'short', day: 'numeric' }))}`}</div>`;
+      if (act !== null) html += tipRow('actual', 'Actual', Fmt.money(act));
+      if (a !== null && (act === null || cur !== fc.startIdx)) html += tipRow('a', 'Perfect', Fmt.money(a));
+      if (b !== null && (act === null || cur !== fc.startIdx)) html += tipRow('b', '2 losses/wk', Fmt.money(b));
+      if (act === null && a === null) html += '<div class="tip-row muted">Pending</div>';
+      placeTip(host, html, cx, Math.min(...[act, a, b].filter((v) => v !== null).map(y).concat([H / 2])), W);
+    };
+    const hide = () => { cross.setAttribute('x1', -10); cross.setAttribute('x2', -10); hideTip(host); };
+    const fromEvent = (ev) => {
+      const r = svg.getBoundingClientRect();
+      const px = ((ev.clientX - r.left) / r.width) * W;
+      return Math.round(((px - pad.l) / innerW) * N);
+    };
+    svg.addEventListener('pointermove', (ev) => show(fromEvent(ev)));
+    svg.addEventListener('pointerdown', (ev) => show(fromEvent(ev)));
+    svg.addEventListener('pointerleave', hide);
+    hit.addEventListener('focus', () => show(cur === null ? Math.max(0, L + 1) : cur));
+    hit.addEventListener('blur', hide);
+    hit.addEventListener('keydown', (ev) => {
+      if (ev.key === 'ArrowRight') { ev.preventDefault(); show((cur ?? 0) + 1); }
+      if (ev.key === 'ArrowLeft') { ev.preventDefault(); show((cur ?? 0) - 1); }
+    });
+  }
+
+  /* Daily P/L: bars above/below zero. Pending days have no bar. */
+  function renderPLChart() {
+    const host = $('#plChart');
+    const { ledger } = view;
+    const N = state.mission.missionDays;
+    const mode = state.ui.plMode;
+    $$('#plToggle button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+    const W = chartWidth(host);
+    const H = 220;
+    const pad = { l: 54, r: 10, t: 12, b: 28 };
+    const val = (d) => (mode === 'pct' ? d.plPct : d.pl);
+    const vals = ledger.days.filter((d) => d.recorded && val(d) !== null).map(val);
+    const t = linearTicks(Math.min(0, ...vals, mode === 'pct' ? -state.mission.stopPct : -1), Math.max(0, ...vals, mode === 'pct' ? state.mission.targetPct : 1), 4);
+    const innerW = W - pad.l - pad.r, innerH = H - pad.t - pad.b;
+    const y = (v) => pad.t + innerH - ((v - t.lo) / (t.hi - t.lo || 1)) * innerH;
+    const band = innerW / N;
+    const bw = Math.max(2, Math.min(18, band - 2));
+    const xc = (i) => pad.l + band * i + band / 2;
+    const fmtTick = (v) => (mode === 'pct' ? Fmt.percent(v, { sign: true }) : (v > 0 ? '+' : '') + axisMoney(v));
+
+    const svg = svgEl('svg', { viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: 'img', 'aria-label': 'Daily profit and loss bars. Values are listed in the daily ledger table.' });
+    const g = svgEl('g', { class: 'grid' });
+    t.ticks.forEach((tv) => {
+      g.appendChild(svgEl('line', { x1: pad.l, x2: W - pad.r, y1: y(tv), y2: y(tv), class: tv === 0 ? 'zero' : '' }));
+      g.appendChild(svgEl('text', { x: pad.l - 8, y: y(tv) + 4, 'text-anchor': 'end', class: 'tick' }, fmtTick(tv)));
+    });
+    const xStep = Math.max(1, Math.ceil(N / (W < 520 ? 5 : 10)));
+    for (let i = 0; i < N; i += xStep) g.appendChild(svgEl('text', { x: xc(i), y: H - 8, 'text-anchor': 'middle', class: 'tick' }, `D${i + 1}`));
+    svg.appendChild(g);
+
+    // Target and stop reference lines (percent mode shows the plan exactly).
+    if (mode === 'pct') {
+      svg.appendChild(svgEl('line', { x1: pad.l, x2: W - pad.r, y1: y(state.mission.targetPct), y2: y(state.mission.targetPct), class: 'ref ref-pos' }));
+      svg.appendChild(svgEl('line', { x1: pad.l, x2: W - pad.r, y1: y(-state.mission.stopPct), y2: y(-state.mission.stopPct), class: 'ref ref-neg' }));
+    }
+
+    const y0 = y(0);
+    ledger.days.forEach((d, i) => {
+      if (!d.recorded) return;
+      const v = val(d);
+      if (d.status === 'notrade' || v === null || Math.abs(v) < 1e-9) {
+        svg.appendChild(svgEl('rect', { x: xc(i) - bw / 2, y: y0 - 1, width: bw, height: 2, rx: 1, class: 'bar-flat' }));
+        return;
+      }
+      const y1 = y(v);
+      svg.appendChild(svgEl('path', { d: roundedBar(xc(i) - bw / 2, y0, y1, bw, Math.min(3, bw / 2)), class: v > 0 ? 'bar-pos' : 'bar-neg' }));
+    });
+
+    const hit = svgEl('rect', { x: pad.l, y: pad.t, width: innerW, height: innerH, fill: 'transparent', tabindex: '0', class: 'hit', 'aria-label': 'Daily P/L chart. Use arrow keys to read each day.' });
+    svg.appendChild(hit);
+    const hl = svgEl('rect', { class: 'band-hl', x: -100, y: pad.t, width: band, height: innerH });
+    svg.insertBefore(hl, svg.firstChild.nextSibling);
+    host.replaceChildren(svg);
+    host.appendChild(tipEl());
+
+    let cur = null;
+    const show = (i) => {
+      cur = Math.max(0, Math.min(N - 1, i));
+      const d = ledger.days[cur];
+      hl.setAttribute('x', pad.l + band * cur);
+      let html = `<div class="tip-title">Day ${d.dayNum}, ${esc(Fmt.date(d.date, { month: 'short', day: 'numeric' }))}</div>`;
+      if (!d.recorded) html += '<div class="tip-row muted">Pending</div>';
+      else if (d.status === 'notrade') html += '<div class="tip-row">No trade, balance unchanged</div>';
+      else html += `<div class="tip-row"><span class="${toneClass(d.pl)}">${Fmt.money(d.pl, { sign: true })}</span>&nbsp;<span class="muted">${Fmt.percent(d.plPct, { sign: true })}</span></div><div class="tip-row muted">Ending ${Fmt.money(d.ending)}</div>`;
+      placeTip(host, html, xc(cur), d.recorded && d.pl ? y(val(d) || 0) : y0, W);
+    };
+    const hide = () => { hl.setAttribute('x', -100); hideTip(host); };
+    const fromEvent = (ev) => {
+      const r = svg.getBoundingClientRect();
+      const px = ((ev.clientX - r.left) / r.width) * W;
+      return Math.floor((px - pad.l) / band);
+    };
+    svg.addEventListener('pointermove', (ev) => show(fromEvent(ev)));
+    svg.addEventListener('pointerdown', (ev) => show(fromEvent(ev)));
+    svg.addEventListener('pointerleave', hide);
+    hit.addEventListener('focus', () => show(cur ?? Math.max(0, ledger.lastRecordedIndex)));
+    hit.addEventListener('blur', hide);
+    hit.addEventListener('keydown', (ev) => {
+      if (ev.key === 'ArrowRight') { ev.preventDefault(); show((cur ?? -1) + 1); }
+      if (ev.key === 'ArrowLeft') { ev.preventDefault(); show((cur ?? 1) - 1); }
+    });
+  }
+
+  function roundedBar(x, y0, y1, w, r) {
+    // Rounded corners only on the data end; flat edge on the zero baseline.
+    const up = y1 < y0;
+    const h = Math.abs(y1 - y0);
+    r = Math.min(r, h);
+    if (up) return `M${x},${y0}V${y1 + r}Q${x},${y1} ${x + r},${y1}H${x + w - r}Q${x + w},${y1} ${x + w},${y1 + r}V${y0}Z`;
+    return `M${x},${y0}V${y1 - r}Q${x},${y1} ${x + r},${y1}H${x + w - r}Q${x + w},${y1} ${x + w},${y1 - r}V${y0}Z`;
+  }
+
+  /* Distribution: one segmented bar of recorded outcomes plus key figures. */
+  function renderDistribution() {
+    const { m } = view;
+    const host = $('#distChart');
+    const segs = [
+      { key: 'profit', label: 'Profit', n: m.profitCount },
+      { key: 'loss', label: 'Loss', n: m.lossCount },
+      { key: 'notrade', label: 'No trade', n: m.noTradeCount },
+    ];
+    if (m.flatCount) segs.push({ key: 'flat', label: 'Flat (review)', n: m.flatCount });
+    const total = segs.reduce((s, x) => s + x.n, 0);
+    const bar = total
+      ? segs.filter((s) => s.n).map((s) => `<span class="seg seg-${s.key}" style="flex:${s.n}" title="${s.label}: ${s.n}"><span>${s.n}</span></span>`).join('')
+      : '<span class="seg seg-empty">No days recorded yet</span>';
+    const legend = segs.map((s) => `<li><span class="swatch sw-${s.key}" aria-hidden="true"></span>${s.label}<b>${s.n}</b><span class="muted">${total ? Fmt.percent((s.n / total) * 100) : '—'}</span></li>`).join('') +
+      `<li><span class="swatch sw-pending" aria-hidden="true"></span>Pending<b>${m.pendingCount}</b><span class="muted">not counted</span></li>`;
+    host.innerHTML = `
+      <div class="segbar" role="img" aria-label="${esc(segs.map((s) => `${s.label} ${s.n}`).join(', '))}">${bar}</div>
+      <ul class="dist-legend">${legend}</ul>
+      <dl class="dist-figs">
+        <div><dt>Gross profit</dt><dd class="${m.grossProfit ? 'pos' : ''}">${Fmt.money(m.grossProfit, { sign: true })}</dd></div>
+        <div><dt>Gross loss</dt><dd class="${m.grossLoss ? 'neg' : ''}">${Fmt.money(m.grossLoss)}</dd></div>
+        <div><dt>Average win</dt><dd>${Fmt.money(m.avgWin, { sign: true })}</dd></div>
+        <div><dt>Average loss</dt><dd>${Fmt.money(m.avgLoss)}</dd></div>
+        <div><dt>Profit factor</dt><dd>${m.profitFactor === null ? '—' : m.profitFactor.toFixed(2)}</dd></div>
+        <div><dt>Past the stop</dt><dd>${m.stopBreaches}</dd></div>
+      </dl>`;
+  }
+
+  /* Mission progress: one ring segment per calendar day, coloured by outcome. */
+  function renderRing() {
+    const host = $('#ringChart');
+    const { ledger, m } = view;
+    const N = state.mission.missionDays;
+    const size = 200, c = size / 2, r = 80, sw = 14;
+    const gap = N > 120 ? 0 : N > 60 ? 0.6 : 1.6; // degrees between segments
+    const svg = svgEl('svg', { viewBox: `0 0 ${size} ${size}`, width: size, height: size, role: 'img', 'aria-label': `${m.completed} of ${N} mission days recorded` });
+    const todayIdx = m.calendar.state === 'active' ? m.calendar.index : -1;
+    const per = 360 / N;
+    const polar = (deg) => { const rad = ((deg - 90) * Math.PI) / 180; return [c + r * Math.cos(rad), c + r * Math.sin(rad)]; };
+    ledger.days.forEach((d, i) => {
+      const a0 = i * per + gap / 2, a1 = (i + 1) * per - gap / 2;
+      const [x0, y0] = polar(a0), [x1, y1] = polar(Math.max(a0 + 0.01, a1));
+      const large = a1 - a0 > 180 ? 1 : 0;
+      const key = d.recorded ? (d.status === 'notrade' ? 'notrade' : d.outcome) : 'pending';
+      const p = svgEl('path', { d: `M${x0.toFixed(2)},${y0.toFixed(2)}A${r},${r} 0 ${large} 1 ${x1.toFixed(2)},${y1.toFixed(2)}`, class: `ring-seg ring-${key}${i === todayIdx ? ' ring-today' : ''}`, 'stroke-width': sw });
+      const title = svgEl('title', {}, `Day ${d.dayNum}: ${STATUS_LABEL[key]}`);
+      p.appendChild(title);
+      svg.appendChild(p);
+    });
+    svg.appendChild(svgEl('text', { x: c, y: c + 4, 'text-anchor': 'middle', class: 'ring-value' }, Fmt.percent(m.progress)));
+    svg.appendChild(svgEl('text', { x: c, y: c + 24, 'text-anchor': 'middle', class: 'ring-sub' }, `${m.completed} of ${N} days`));
+    const legend = `<ul class="ring-legend">
+      <li><span class="swatch sw-profit"></span>Profit ${m.profitCount}</li>
+      <li><span class="swatch sw-loss"></span>Loss ${m.lossCount}</li>
+      <li><span class="swatch sw-notrade"></span>No trade ${m.noTradeCount}</li>
+      <li><span class="swatch sw-pending"></span>Pending ${m.pendingCount}</li>
+      ${todayIdx >= 0 ? '<li><span class="swatch sw-today"></span>Today</li>' : ''}
+    </ul>`;
+    host.replaceChildren(svg);
+    host.insertAdjacentHTML('beforeend', legend);
+  }
+
+  /* Tooltip helpers */
+  function tipEl() {
+    const t = document.createElement('div');
+    t.className = 'tip';
+    t.setAttribute('role', 'status');
+    t.hidden = true;
+    return t;
+  }
+  function tipRow(cls, name, value) {
+    return `<div class="tip-row"><span class="tip-key key-${cls}" aria-hidden="true"></span>${name}<b>${value}</b></div>`;
+  }
+  function placeTip(host, html, cx, cy, W) {
+    const tip = $('.tip', host);
+    if (!tip) return;
+    tip.innerHTML = html;
+    tip.hidden = false;
+    const scaleX = host.getBoundingClientRect().width / W || 1;
+    const tw = tip.offsetWidth;
+    let left = cx * scaleX + 14;
+    if (left + tw > host.clientWidth - 4) left = cx * scaleX - tw - 14;
+    tip.style.left = `${Math.max(4, left)}px`;
+    tip.style.top = `${Math.max(4, cy * scaleX - 24)}px`;
+  }
+  function hideTip(host) {
+    const tip = $('.tip', host);
+    if (tip) tip.hidden = true;
+  }
+
+  /* ---- Backup: export / import / reset -------------------------------- */
+  function exportBackup() {
+    const data = JSON.stringify(Engine.serialize(state), null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `trading-mastermind-backup-${Engine.todayKey()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast('Backup exported. Keep the file somewhere safe.');
+  }
+
+  function importBackup(file) {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast('That file is too large to be a backup.', 'neg'); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      let parsed;
+      try {
+        parsed = JSON.parse(String(reader.result));
+      } catch (e) {
+        toast('That file isn’t valid JSON, so nothing was imported.', 'neg');
+        return;
+      }
+      let result;
+      try {
+        result = Engine.sanitizeState(parsed);
+      } catch (e) {
+        toast(`${e.message} Nothing was imported.`, 'neg');
+        return;
+      }
+      if (!result.state.mission) { toast('The backup has no mission in it. Nothing was imported.', 'neg'); return; }
+      const n = Object.keys(result.state.records).length;
+      const mi = result.state.mission;
+      confirmDialog({
+        title: 'Replace the current mission?',
+        body: `The backup holds a ${mi.missionDays}-day mission starting ${Fmt.date(mi.startDate, { month: 'long', day: 'numeric', year: 'numeric' })} with ${n} recorded day${n === 1 ? '' : 's'}. Importing replaces everything in this browser.${result.warnings.length ? ' ' + result.warnings.join(' ') : ''}`,
+        confirm: 'Import backup',
+      }).then((ok) => {
+        if (!ok) return;
+        state = result.state;
+        showApp();
+        commit('Backup imported.');
+      });
+    };
+    reader.onerror = () => toast('The file couldn’t be read.', 'neg');
+    reader.readAsText(file);
+  }
+
+  function resetMission() {
+    const n = Object.keys(state.records).length;
+    confirmDialog({
+      title: 'Reset the mission?',
+      body: `This deletes the mission settings and ${n} recorded day${n === 1 ? '' : 's'} from this browser. Export a backup first if you might want them back.`,
+      confirm: 'Reset mission',
+      danger: true,
+    }).then((ok) => {
+      if (!ok) return;
+      state = Engine.emptyState();
+      Store.clear();
+      closeDrawer();
+      showSetup();
+      toast('Mission reset.');
+    });
+  }
+
+  /* ---- Dialogs -------------------------------------------------------- */
+  let lastFocus = null;
+  function openDialog(sel) {
+    const d = $(sel);
+    lastFocus = document.activeElement;
+    if (typeof d.showModal === 'function') d.showModal();
+    else d.setAttribute('open', '');
+  }
+  function closeDialog(sel) {
+    const d = $(sel);
+    if (d.open) {
+      if (typeof d.close === 'function') d.close();
+      else d.removeAttribute('open');
+    }
+  }
+
+  function confirmDialog({ title, body, confirm, danger }) {
+    return new Promise((resolve) => {
+      const d = $('#confirmDialog');
+      $('#confirmTitle').textContent = title;
+      $('#confirmBody').textContent = body;
+      const ok = $('#confirmOk');
+      ok.textContent = confirm;
+      ok.className = `btn ${danger ? 'btn-danger' : 'btn-primary'}`;
+      const done = (val) => {
+        d.removeEventListener('close', onClose);
+        ok.removeEventListener('click', onOk);
+        $('#confirmCancel').removeEventListener('click', onCancel);
+        resolve(val);
+      };
+      const onOk = () => { d.returnValue = 'ok'; closeDialog('#confirmDialog'); };
+      const onCancel = () => { d.returnValue = 'cancel'; closeDialog('#confirmDialog'); };
+      const onClose = () => done(d.returnValue === 'ok');
+      d.returnValue = 'cancel';
+      d.addEventListener('close', onClose);
+      ok.addEventListener('click', onOk);
+      $('#confirmCancel').addEventListener('click', onCancel);
+      if (typeof d.showModal === 'function') d.showModal(); else d.setAttribute('open', '');
+      $('#confirmCancel').focus();
+    });
+  }
+
+  /* ---- Toasts --------------------------------------------------------- */
+  function toast(message, tone = '', ms = 4200) {
+    const host = $('#toasts');
+    const t = document.createElement('div');
+    t.className = `toast ${tone ? 'toast-' + tone : ''}`;
+    t.textContent = message;
+    host.appendChild(t);
+    while (host.children.length > 3) host.firstElementChild.remove();
+    requestAnimationFrame(() => t.classList.add('in'));
+    setTimeout(() => {
+      t.classList.remove('in');
+      setTimeout(() => t.remove(), 300);
+    }, ms);
+  }
+
+  /* ---- Animated numbers ---------------------------------------------- */
+  function animateNumber(el, to, fmt) {
+    if (!el) return;
+    const from = typeof el._val === 'number' ? el._val : null;
+    el._val = to;
+    const finalText = fmt(to);
+    if (from === null || reduceMotion.matches || from === to || !Number.isFinite(from) || !Number.isFinite(to)) {
+      el.textContent = finalText;
+      return;
+    }
+    const start = performance.now(), dur = 520;
+    const token = (el._tok = (el._tok || 0) + 1);
+    const step = (now) => {
+      if (el._tok !== token) return;
+      const k = Math.min(1, (now - start) / dur);
+      const e = 1 - Math.pow(1 - k, 3);
+      el.textContent = k < 1 ? fmt(from + (to - from) * e) : finalText;
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  const toneClass = (v) => (v === null || v === undefined ? '' : v > Engine.EPS ? 'pos' : v < -Engine.EPS ? 'neg' : '');
+
+  /* ---- Drawer (mobile navigation) ------------------------------------- */
+  function openDrawer() {
+    document.body.classList.add('drawer-open');
+    $('#menuBtn').setAttribute('aria-expanded', 'true');
+  }
+  function closeDrawer() {
+    document.body.classList.remove('drawer-open');
+    const b = $('#menuBtn');
+    if (b) b.setAttribute('aria-expanded', 'false');
+  }
+
+  /* ---- Static event bindings ----------------------------------------- */
+  function bindStatic() {
+    const form = $('#missionForm');
+    form.addEventListener('submit', submitMissionForm);
+    form.addEventListener('input', updateMissionPreview);
+
+    document.addEventListener('click', (ev) => {
+      const opener = ev.target.closest('[data-open]');
+      if (opener) { openDay(Number(opener.dataset.open)); return; }
+    });
+
+    $('#todayRecord').addEventListener('click', (ev) => openDay(Number(ev.currentTarget.dataset.index)));
+
+    $$('#dayDialog input[name="status"]').forEach((r) => r.addEventListener('change', () => setEntryStatus(r.value, true)));
+    $('#endingInput').addEventListener('input', updateEntryPreview);
+    $('#quickFill').addEventListener('click', (ev) => {
+      $('#endingInput').value = ev.currentTarget.dataset.value;
+      updateEntryPreview();
+    });
+    $('#dayForm').addEventListener('submit', saveDay);
+    $('#clearDay').addEventListener('click', clearDay);
+    $$('[data-close]').forEach((b) => b.addEventListener('click', () => closeDialog(b.dataset.close)));
+
+    // Close a dialog by clicking its backdrop.
+    const outside = (d, ev) => {
+      const r = d.getBoundingClientRect();
+      return ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom;
+    };
+    $$('dialog').forEach((d) => {
+      let pressedOutside = false;
+      d.addEventListener('pointerdown', (ev) => { pressedOutside = ev.target === d && outside(d, ev); });
+      d.addEventListener('click', (ev) => {
+        if (ev.target === d && pressedOutside && outside(d, ev)) {
+          if (d.id === 'confirmDialog') d.returnValue = 'cancel';
+          closeDialog('#' + d.id);
+        }
+        pressedOutside = false;
+      });
+    });
+
+    $('#settingsBtn').addEventListener('click', () => { closeDrawer(); openSettings(); });
+    $('#exportBtn').addEventListener('click', () => { closeDrawer(); exportBackup(); });
+    $('#importInput').addEventListener('change', (ev) => {
+      closeDrawer();
+      importBackup(ev.target.files[0]);
+      ev.target.value = '';
+    });
+    $('#setupImport').addEventListener('change', (ev) => {
+      importBackup(ev.target.files[0]);
+      ev.target.value = '';
+    });
+    // File-picker labels are focusable; open them with Enter or Space too.
+    $$('label.btn input[type="file"]').forEach((input) => {
+      input.parentElement.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); input.click(); }
+      });
+    });
+    $('#resetBtn').addEventListener('click', resetMission);
+    $('#settingsDialog').addEventListener('close', () => {
+      // Keep the form available for a later setup screen.
+      if (!$('#app').hidden) return;
+      $('#setupHost').appendChild($('#missionForm'));
+    });
+
+    $$('#scaleToggle button').forEach((b) => b.addEventListener('click', () => {
+      state.ui.scale = b.dataset.scale; Store.save(state); renderBalanceChart();
+    }));
+    $$('#plToggle button').forEach((b) => b.addEventListener('click', () => {
+      state.ui.plMode = b.dataset.mode; Store.save(state); renderPLChart();
+    }));
+
+    $('#menuBtn').addEventListener('click', () => {
+      if (document.body.classList.contains('drawer-open')) closeDrawer(); else openDrawer();
+    });
+    $('#scrim').addEventListener('click', closeDrawer);
+    $$('.nav a').forEach((a) => a.addEventListener('click', closeDrawer));
+    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') closeDrawer(); });
+
+    // Re-render charts on resize, and refresh "today" when the date rolls over.
+    let rt;
+    window.addEventListener('resize', () => {
+      clearTimeout(rt);
+      rt = setTimeout(() => { if (state.mission && !$('#app').hidden) { compute(); renderCharts(); } }, 150);
+    });
+    let lastDay = Engine.todayKey();
+    setInterval(() => {
+      const now = Engine.todayKey();
+      if (now !== lastDay) { lastDay = now; if (state.mission) render(); }
+    }, 60000);
+
+    // Keep tabs in sync if the app is open twice.
+    window.addEventListener('storage', (ev) => {
+      if (ev.key !== 'tradingMastermind.state') return;
+      const { state: s } = Store.load();
+      state = s;
+      if (state.mission) showApp(); else showSetup();
+    });
+  }
+
+  return { init, _debug: () => ({ state, view }) };
+})();
+
+  
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <!-- ============ First-run setup ============ -->
+  <div class="setup" id="setup" hidden>
+    <div class="setup-card glass">
+      <div class="brand brand-lg">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M4 22 L11 15 L16 19 L27 7" /><path d="M21 7 H27 V13" /><path class="mark-base" d="M4 27 H28" /></svg>
+        <div>
+          <h1>Trading Mastermind</h1>
+          <p class="muted">Set up your daily challenge. You can change any of this later.</p>
+        </div>
+      </div>
+      <div id="setupHost"></div>
+      <p class="setup-alt">
+        Have a backup?
+        <label class="linklike">Import it<input type="file" id="setupImport" accept="application/json,.json" class="sr-only"></label>
+      </p>
+    </div>
+  </div>
+
+  <!-- Mission form (moved between the setup screen and the settings dialog) -->
+  <form id="missionForm" class="mission-form" novalidate>
+    <div class="form-grid">
+      <label class="field field-wide">
+        <span class="field-label">Starting balance</span>
+        <span class="input-affix"><span aria-hidden="true">$</span><input name="startBalance" inputmode="decimal" autocomplete="off" placeholder="100.00" aria-describedby="err-startBalance"></span>
+        <span class="field-error" id="err-startBalance"></span>
+      </label>
+      <label class="field">
+        <span class="field-label">Daily profit target</span>
+        <span class="input-affix suffix"><input name="targetPct" inputmode="decimal" autocomplete="off" aria-describedby="err-targetPct"><span aria-hidden="true">%</span></span>
+        <span class="field-error" id="err-targetPct"></span>
+      </label>
+      <label class="field">
+        <span class="field-label">Daily stop loss</span>
+        <span class="input-affix suffix"><input name="stopPct" inputmode="decimal" autocomplete="off" aria-describedby="err-stopPct"><span aria-hidden="true">%</span></span>
+        <span class="field-error" id="err-stopPct"></span>
+      </label>
+      <fieldset class="field">
+        <legend class="field-label">Challenge / mission days</legend>
+        <span class="split-input">
+          <input name="challengeTotal" inputmode="numeric" autocomplete="off" aria-label="Challenge" aria-describedby="err-challengeTotal">
+          <span aria-hidden="true">/</span>
+          <input name="missionDays" inputmode="numeric" autocomplete="off" aria-label="Mission days" aria-describedby="err-missionDays">
+        </span>
+        <span class="field-hint">The second number sets how many calendar days are tracked.</span>
+        <span class="field-error" id="err-challengeTotal"></span>
+        <span class="field-error" id="err-missionDays"></span>
+      </fieldset>
+      <label class="field">
+        <span class="field-label">Start date</span>
+        <input type="date" name="startDate" aria-describedby="err-startDate">
+        <span class="field-error" id="err-startDate"></span>
+      </label>
+    </div>
+    <div class="mission-preview" id="missionPreview" aria-live="polite"></div>
+    <div class="form-actions">
+      <button type="button" class="btn btn-ghost settings-only" data-close="#settingsDialog">Cancel</button>
+      <button type="submit" class="btn btn-primary" id="missionSubmit">Start mission</button>
+    </div>
+  </form>
+
+  <!-- ============ App shell ============ -->
+  <div class="app" id="app" hidden>
+    <aside class="sidebar glass" id="sidebar" aria-label="Mission navigation">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M4 22 L11 15 L16 19 L27 7" /><path d="M21 7 H27 V13" /><path class="mark-base" d="M4 27 H28" /></svg>
+        <span class="brand-name">Trading Mastermind</span>
+      </div>
+
+      <div class="mission-card">
+        <span class="mission-code" id="sideCode"></span>
+        <span class="mission-range" id="sideRange"></span>
+        <span class="mission-rules" id="sideRules"></span>
+      </div>
+
+      <nav class="nav">
+        <a href="#overview">Overview</a>
+        <a href="#calendar">Calendar</a>
+        <a href="#projections">Projections</a>
+        <a href="#analytics">Analytics</a>
+        <a href="#ledger">Daily ledger</a>
+      </nav>
+
+      <div class="side-actions">
+        <button type="button" class="btn btn-side" id="settingsBtn">Mission settings</button>
+        <button type="button" class="btn btn-side" id="exportBtn">Export backup</button>
+        <label class="btn btn-side" tabindex="0">Import backup<input type="file" id="importInput" accept="application/json,.json" class="sr-only"></label>
+        <button type="button" class="btn btn-side btn-side-danger" id="resetBtn">Reset mission</button>
+      </div>
+
+      <p class="side-note">Saved in this browser only. Projections are arithmetic, not forecasts of what you will earn. Binary options trading carries a high risk of losing your deposit.</p>
+    </aside>
+    <div class="scrim" id="scrim"></div>
+
+    <main id="main" class="main">
+      <header class="topbar">
+        <button type="button" class="menu-btn" id="menuBtn" aria-controls="sidebar" aria-expanded="false" aria-label="Open menu">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+        </button>
+        <div class="topbar-title">
+          <h1>Mission <span id="missionCode"></span></h1>
+          <p class="muted" id="missionRange"></p>
+        </div>
+      </header>
+
+      <div class="banner" id="storageBanner" hidden role="alert">This browser isn’t saving your changes. Export a backup before you close the tab.</div>
+
+      <!-- Overview -->
+      <section id="overview" class="hero" aria-labelledby="heroLabel">
+        <div class="hero-balance glass">
+          <h2 id="heroLabel" class="hero-label">Current balance</h2>
+          <p class="hero-value" id="heroBalance">$0.00</p>
+          <p class="hero-delta" id="heroDelta"></p>
+          <p class="muted hero-start" id="heroStart"></p>
+          <div class="progress" id="heroProgress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="Mission recorded">
+            <span class="progress-fill"></span>
+          </div>
+          <p class="muted progress-label" id="heroProgressLabel"></p>
+        </div>
+
+        <div class="hero-today glass">
+          <div class="today-head">
+            <div>
+              <h2 class="today-caption" id="todayCaption"></h2>
+              <p class="muted" id="todayDate"></p>
+            </div>
+            <button type="button" class="btn btn-primary" id="todayRecord">Record</button>
+          </div>
+          <div class="corridor">
+            <div class="corridor-end">
+              <span class="muted">Stop at</span>
+              <strong id="todayStop"></strong>
+              <span class="neg" id="todayStopAmt"></span>
+            </div>
+            <div class="corridor-mid">
+              <span class="muted">Opens at</span>
+              <strong id="todayOpen"></strong>
+            </div>
+            <div class="corridor-end corridor-end-right">
+              <span class="muted">Target</span>
+              <strong id="todayTarget"></strong>
+              <span class="pos" id="todayTargetAmt"></span>
+            </div>
+          </div>
+          <div id="todayMeter"></div>
+          <p class="today-result" id="todayResult"></p>
+        </div>
+      </section>
+
+      <section class="kpis" id="kpis" aria-label="Mission statistics"></section>
+
+      <div id="alerts" class="alerts"></div>
+
+      <!-- Calendar -->
+      <section id="calendar" class="section" aria-labelledby="calTitle">
+        <div class="section-head">
+          <div>
+            <h2 id="calTitle">Trading calendar</h2>
+            <p class="muted">Each day’s ending balance becomes the next day’s opening balance. Tap a day to record it.</p>
+          </div>
+          <ul class="legend" aria-label="Status colours">
+            <li><span class="swatch sw-profit"></span>Profit</li>
+            <li><span class="swatch sw-loss"></span>Loss</li>
+            <li><span class="swatch sw-notrade"></span>No trade</li>
+            <li><span class="swatch sw-pending"></span>Pending</li>
+          </ul>
+        </div>
+        <div class="cal-key" aria-hidden="true">
+          <span class="meter meter-key"><span class="meter-track"></span><span class="meter-zero" style="left:33.33%"></span></span>
+          <span class="muted">Each bar runs from the day’s stop loss on the left to its target on the right. The tick marks the opening balance.</span>
+        </div>
+        <div class="cal-weekdays" aria-hidden="true"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+        <div class="cal-grid" id="calendarGrid"></div>
+      </section>
+
+      <!-- Projections -->
+      <section id="projections" class="section" aria-labelledby="projTitle">
+        <div class="section-head">
+          <div>
+            <h2 id="projTitle">Projections</h2>
+            <p class="muted" id="projBasis"></p>
+          </div>
+        </div>
+        <div class="proj-grid">
+          <article class="proj proj-actual">
+            <h3>Realized so far</h3>
+            <p class="proj-value" id="projActual"></p>
+            <p class="proj-roi" id="projActualRoi"></p>
+            <p class="proj-detail muted">Money actually recorded in the calendar.</p>
+          </article>
+          <article class="proj proj-a">
+            <h3><span class="key key-a" aria-hidden="true"></span>Scenario A: perfect discipline</h3>
+            <p class="proj-value" id="projAFinal"></p>
+            <p class="proj-roi" id="projARoi"></p>
+            <p class="proj-detail muted" id="projADetail"></p>
+          </article>
+          <article class="proj proj-b">
+            <h3><span class="key key-b" aria-hidden="true"></span>Scenario B: two losses a week</h3>
+            <p class="proj-value" id="projBFinal"></p>
+            <p class="proj-roi" id="projBRoi"></p>
+            <p class="proj-detail muted" id="projBDetail"></p>
+          </article>
+        </div>
+        <p class="caveat">Both scenarios are hypothetical. They show what compounding does to a fixed rule, not what the market will pay. Real results vary, and losses can exceed the plan.</p>
+      </section>
+
+      <!-- Analytics -->
+      <section id="analytics" class="section" aria-labelledby="anTitle">
+        <div class="section-head">
+          <div>
+            <h2 id="anTitle">Analytics</h2>
+            <p class="muted">Hover or tap a chart to read a day. Every value is also in the daily ledger below.</p>
+          </div>
+        </div>
+        <div class="charts">
+          <article class="chart-card chart-wide">
+            <div class="chart-head">
+              <div>
+                <h3>Actual balance vs projected growth</h3>
+                <ul class="legend">
+                  <li><span class="key key-actual"></span>Actual</li>
+                  <li><span class="key key-a"></span>Scenario A</li>
+                  <li><span class="key key-b"></span>Scenario B</li>
+                </ul>
+              </div>
+              <div class="seg-toggle" id="scaleToggle" role="group" aria-label="Y-axis scale">
+                <button type="button" data-scale="log">Log</button>
+                <button type="button" data-scale="linear">Linear</button>
+              </div>
+            </div>
+            <div class="chart" id="balanceChart"></div>
+            <p class="chart-note muted" id="scaleNote"></p>
+          </article>
+          <article class="chart-card">
+            <div class="chart-head">
+              <h3>Daily profit and loss</h3>
+              <div class="seg-toggle" id="plToggle" role="group" aria-label="Units">
+                <button type="button" data-mode="usd">$</button>
+                <button type="button" data-mode="pct">%</button>
+              </div>
+            </div>
+            <div class="chart" id="plChart"></div>
+          </article>
+          <article class="chart-card">
+            <div class="chart-head"><h3>Profit and loss distribution</h3></div>
+            <div id="distChart"></div>
+          </article>
+          <article class="chart-card chart-ring">
+            <div class="chart-head"><h3>Mission progress</h3></div>
+            <div class="ring" id="ringChart"></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- Ledger -->
+      <section id="ledger" class="section" aria-labelledby="ledTitle">
+        <div class="section-head">
+          <div>
+            <h2 id="ledTitle">Daily ledger</h2>
+            <p class="muted">Target and stop balances are calculated from each day’s opening balance.</p>
+          </div>
+        </div>
+        <div class="table-wrap" tabindex="0" role="region" aria-labelledby="ledTitle">
+          <table class="ledger">
+            <thead>
+              <tr>
+                <th scope="col" class="num">Day</th>
+                <th scope="col">Date</th>
+                <th scope="col">Status</th>
+                <th scope="col" class="num">Opening</th>
+                <th scope="col" class="num">Target</th>
+                <th scope="col" class="num">Stop</th>
+                <th scope="col" class="num">Ending</th>
+                <th scope="col" class="num">P/L</th>
+                <th scope="col" class="num">P/L %</th>
+                <th scope="col">Notes</th>
+                <th scope="col"><span class="sr-only">Action</span></th>
+              </tr>
+            </thead>
+            <tbody id="ledgerBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer class="foot muted">Trading Mastermind runs entirely in this browser. Nothing is sent anywhere.</footer>
+    </main>
+  </div>
+
+  <!-- ============ Day dialog ============ -->
+  <dialog id="dayDialog" class="dialog" aria-labelledby="dayTitle">
+    <form id="dayForm" novalidate>
+      <header class="dialog-head">
+        <div>
+          <h2 id="dayTitle">Day</h2>
+          <p class="muted" id="daySubtitle"></p>
+        </div>
+        <button type="button" class="icon-btn" data-close="#dayDialog" aria-label="Close">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </header>
+
+      <dl class="day-plan-grid">
+        <div><dt>Opening</dt><dd id="dayOpening"></dd></div>
+        <div><dt>Target balance</dt><dd id="dayTargetBal"></dd><dd class="pos small" id="dayTargetAmt"></dd></div>
+        <div><dt>Stop balance</dt><dd id="dayStopBal"></dd><dd class="neg small" id="dayStopAmt"></dd></div>
+      </dl>
+      <p class="muted small day-origin" id="dayOrigin"></p>
+
+      <fieldset class="status-pick">
+        <legend>How did the day go?</legend>
+        <label class="status-opt opt-profit"><input type="radio" name="status" value="profit"><span><b aria-hidden="true">▲</b>Profit</span></label>
+        <label class="status-opt opt-loss"><input type="radio" name="status" value="loss"><span><b aria-hidden="true">▼</b>Loss</span></label>
+        <label class="status-opt opt-notrade"><input type="radio" name="status" value="notrade"><span><b aria-hidden="true">–</b>No trade</span></label>
+      </fieldset>
+
+      <div class="ending" id="endingWrap" hidden>
+        <label class="field">
+          <span class="field-label">Ending balance</span>
+          <span class="input-affix input-lg"><span aria-hidden="true">$</span><input id="endingInput" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-describedby="entryError entryPreview"></span>
+        </label>
+        <button type="button" class="btn btn-ghost btn-xs" id="quickFill"></button>
+      </div>
+
+      <p class="entry-preview" id="entryPreview" aria-live="polite"></p>
+      <p class="field-error" id="entryError" role="alert"></p>
+
+      <footer class="dialog-foot">
+        <button type="button" class="btn btn-ghost btn-danger-text" id="clearDay">Clear result</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-ghost" data-close="#dayDialog">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="saveDay">Save day</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- ============ Settings dialog ============ -->
+  <dialog id="settingsDialog" class="dialog dialog-wide" aria-labelledby="settingsTitle">
+    <header class="dialog-head">
+      <div>
+        <h2 id="settingsTitle">Mission settings</h2>
+        <p class="muted">Recorded ending balances are kept. Openings, targets and projections are recalculated.</p>
+      </div>
+      <button type="button" class="icon-btn" data-close="#settingsDialog" aria-label="Close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </header>
+    <div id="settingsHost"></div>
+  </dialog>
+
+  <!-- ============ Confirm dialog ============ -->
+  <dialog id="confirmDialog" class="dialog dialog-sm" aria-labelledby="confirmTitle" aria-describedby="confirmBody">
+    <h2 id="confirmTitle"></h2>
+    <p id="confirmBody" class="muted"></p>
+    <footer class="dialog-foot">
+      <span class="spacer"></span>
+      <button type="button" class="btn btn-ghost" id="confirmCancel">Cancel</button>
+      <button type="button" class="btn btn-primary" id="confirmOk">Confirm</button>
+    </footer>
+  </dialog>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+</body>
+</html>
